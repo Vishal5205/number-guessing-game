@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Number Guessing Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+</head>
+
+<body>
+<div class="game-container">
+    <button class="dark-toggle" onclick="toggleDark()">🌙</button>
+
+    <h1>🎯 Guess the Number</h1>
+
+    <p>Number between <b>1 – 100</b></p>
+    <p>Attempts Left: <span id="attempts">5</span></p>
+    <p>⏱ Time: <span id="timer">0</span> sec</p>
+
+    <input type="number" id="guessInput" placeholder="Enter number">
+    <button onclick="checkGuess()">Guess</button>
+    <button class="reset" onclick="resetGame()">Reset</button>
+
+    <p id="message"></p>
+    <p class="score">🏆 Best Score: <span id="bestScore">--</span></p>
+</div>
+
+<audio id="winSound" src="sounds/win.mp3"></audio>
+<audio id="loseSound" src="sounds/lose.mp3"></audio>
+<audio id="clickSound" src="sounds/click.mp3"></audio>
+
+<script src="script.js"></script>
+</body>
+</html>

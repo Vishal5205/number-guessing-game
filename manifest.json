@@ -1,0 +1,9 @@
+{
+  "name": "Number Guessing Game",
+  "short_name": "GuessGame",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#4CAF50",
+  "icons": []
+}
