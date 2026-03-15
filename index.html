@@ -2,584 +2,874 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>TARGET LOCK — Number Guessing Game</title>
+  <title>DEEP SPACE — Number Guessing Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;700;900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:        #0d0f0d;
-      --surface:   #141814;
-      --surface2:  #1a1f1a;
-      --border:    #2a3a2a;
-      --accent:    #4ade80;
-      --accent2:   #22c55e;
-      --danger:    #ef4444;
-      --warn:      #f59e0b;
-      --muted:     #4b5563;
-      --text:      #e5e7eb;
-      --text-dim:  #6b7280;
+      --space:    #04060f;
+      --deep:     #070d1f;
+      --card:     #0b1228;
+      --rim:      #1a2a4a;
+      --blue:     #3b82f6;
+      --glow:     #60a5fa;
+      --ice:      #bae6fd;
+      --orange:   #f97316;
+      --red:      #ef4444;
+      --green:    #10b981;
+      --dim:      #334155;
+      --muted:    #64748b;
+      --text:     #e2e8f0;
+      --mono:     'Courier Prime', monospace;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       min-height: 100vh;
-      background: var(--bg);
-      font-family: 'Barlow Condensed', sans-serif;
+      background: var(--space);
+      font-family: 'Exo 2', sans-serif;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
+      justify-content: flex-start;
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background-image:
-        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(74,222,128,0.06) 0%, transparent 60%),
-        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-    }
+    /* ── STARFIELD ── */
+    #stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
-    body::after {
-      content: '';
-      position: fixed; inset: 0;
-      background: repeating-linear-gradient(
-        0deg, transparent, transparent 3px,
-        rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px
-      );
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    #radar-canvas {
+    /* ── NEBULA GLOW ── */
+    .nebula {
       position: fixed;
-      top: -100px; right: -100px;
-      width: 380px; height: 380px;
-      opacity: 0.12;
+      border-radius: 50%;
+      filter: blur(100px);
       pointer-events: none;
       z-index: 0;
     }
+    .nb1 { width:500px;height:300px;background:rgba(59,130,246,0.07);top:-100px;left:-100px; }
+    .nb2 { width:400px;height:400px;background:rgba(249,115,22,0.05);bottom:-150px;right:-100px; }
+    .nb3 { width:300px;height:300px;background:rgba(16,185,129,0.04);top:40%;left:30%; }
 
-    .wrapper {
+    /* ── PAGE LAYOUT ── */
+    .page {
       position: relative;
       z-index: 1;
       width: 100%;
-      max-width: 480px;
+      max-width: 520px;
+      padding: 24px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
 
-    /* TOP BAR */
-    .top-bar {
+    /* ── HEADER BAR ── */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0 18px;
+      border-bottom: 1px solid rgba(59,130,246,0.12);
+      margin-bottom: 24px;
+      animation: fadeIn 0.6s ease both;
+    }
+    .agency-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .live-tag {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 18px;
-      animation: slideDown 0.5s ease both;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--green);
+      letter-spacing: 2px;
     }
-    .top-bar-left { display: flex; align-items: center; gap: 10px; }
-    .status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
-      animation: blink 1.5s ease-in-out infinite;
+    .live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 1.4s ease-in-out infinite;
     }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .status-text {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px; color: var(--accent);
-      letter-spacing: 2px; text-transform: uppercase;
-    }
-    .mission-id {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px; color: var(--muted); letter-spacing: 1px;
-    }
+    @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:0.5} }
 
-    /* TITLE */
-    .title-block {
-      text-align: center;
-      margin-bottom: 20px;
-      animation: slideDown 0.6s ease 0.1s both;
+    /* ── PLANET SECTION ── */
+    .planet-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 28px;
+      animation: fadeIn 0.7s ease 0.1s both;
     }
-    .title-block h1 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(42px, 10vw, 68px);
-      color: var(--text);
-      letter-spacing: 6px;
-      line-height: 1;
-      text-shadow: 0 0 40px rgba(74,222,128,0.15);
-    }
-    .title-block h1 span { color: var(--accent); }
-    .title-sub {
-      font-size: 11px; letter-spacing: 5px;
-      color: var(--muted); text-transform: uppercase; margin-top: 4px;
-    }
-
-    /* PANEL */
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      overflow: hidden;
-      animation: fadeUp 0.7s ease 0.2s both;
+    .orbit-wrapper {
       position: relative;
+      width: 160px; height: 160px;
+      margin-bottom: 16px;
     }
-    .panel::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    /* orbit rings */
+    .orbit-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(59,130,246,0.2);
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+    }
+    .ring1 { width:145px;height:145px;animation:spinRing 12s linear infinite; }
+    .ring2 { width:130px;height:130px;animation:spinRing 8s linear infinite reverse; border-style:dashed; }
+    @keyframes spinRing { from{transform:translate(-50%,-50%) rotate(0)} to{transform:translate(-50%,-50%) rotate(360deg)} }
+
+    /* satellite dot on ring */
+    .ring1::after {
+      content:'';
+      position:absolute;
+      width:7px;height:7px;
+      background:var(--glow);
+      border-radius:50%;
+      box-shadow:0 0 8px var(--glow);
+      top:4px; left:50%;
+      transform:translateX(-50%);
+    }
+    .ring2::after {
+      content:'';
+      position:absolute;
+      width:5px;height:5px;
+      background:var(--orange);
+      border-radius:50%;
+      box-shadow:0 0 6px var(--orange);
+      bottom:2px; right:10px;
     }
 
-    /* HUD STRIP */
-    .hud-strip {
+    /* Planet canvas */
+    #planetCanvas {
+      position: absolute;
+      top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      border-radius:50%;
+      width:90px;height:90px;
+    }
+
+    .mission-title {
+      font-size: clamp(26px,7vw,38px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: var(--text);
+      text-align: center;
+      line-height: 1;
+    }
+    .mission-title span { color: var(--glow); }
+    .mission-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-align: center;
+      margin-top: 5px;
+    }
+
+    /* ── TELEMETRY ROW ── */
+    .telemetry {
       display: grid;
-      grid-template-columns: 1fr 1px 1fr 1px 1fr;
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
+      grid-template-columns: repeat(3,1fr);
+      gap: 1px;
+      background: var(--rim);
+      border: 1px solid var(--rim);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      animation: fadeIn 0.8s ease 0.2s both;
     }
-    .hud-divider { background: var(--border); }
-    .hud-cell { padding: 12px 16px; text-align: center; }
-    .hud-label { font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 3px; }
-    .hud-val { font-family: 'Share Tech Mono', monospace; font-size: 20px; color: var(--accent); line-height: 1; }
-
-    /* AMMO */
-    .ammo-section { padding: 0 0 16px; border: none; }
-    .ammo-label { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px; }
-    .ammo-row { display: flex; gap: 10px; align-items: center; }
-    .bullet {
-      width: 36px; height: 36px;
-      display: flex; align-items: center; justify-content: center;
+    .telem-cell {
+      background: var(--card);
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .telem-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .telem-val {
+      font-family: var(--mono);
       font-size: 22px;
-      transition: all 0.3s ease;
-      filter: drop-shadow(0 2px 6px rgba(74,222,128,0.4));
+      font-weight: 700;
+      color: var(--glow);
+      line-height: 1;
+      transition: color 0.3s;
     }
-    .bullet.spent {
-      opacity: 0.15; filter: none;
-      animation: none; transform: rotate(90deg) scale(0.85);
-    }
-    .bullet.firing { animation: bulletFire 0.45s ease forwards; }
-    @keyframes bulletFire {
-      0%   { transform: scale(1.5) translateY(-5px); filter: drop-shadow(0 0 12px #fff); }
-      40%  { transform: scale(0.5) rotate(45deg); opacity: 0.5; }
-      100% { transform: rotate(90deg) scale(0.85); opacity: 0.15; filter: none; }
-    }
-    .ammo-text { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--muted); margin-left: 6px; }
+    .telem-val.warn { color: var(--orange); }
+    .telem-val.crit { color: var(--red); animation: critBlink 0.6s ease infinite; }
+    @keyframes critBlink { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-    /* CROSSHAIR */
-    .crosshair-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
-    .crosshair-wrap svg { width: 70px; height: 70px; animation: rotateCross 8s linear infinite; }
-    @keyframes rotateCross { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-    .crosshair-wrap svg .inner-ring { animation: pulsering 1.5s ease-in-out infinite; transform-origin: center; }
-    @keyframes pulsering { 0%,100%{r:12;opacity:1} 50%{r:15;opacity:0.5} }
+    /* ── MAIN CONSOLE ── */
+    .console {
+      background: var(--card);
+      border: 1px solid var(--rim);
+      border-radius: 8px;
+      overflow: hidden;
+      animation: fadeIn 0.9s ease 0.3s both;
+    }
 
-    /* INPUT */
-    .input-group { position: relative; margin-bottom: 14px; }
-    .input-prefix {
-      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-      font-family: 'Share Tech Mono', monospace; font-size: 13px;
-      color: var(--accent); pointer-events: none; letter-spacing: 1px;
+    /* Console top bar */
+    .console-topbar {
+      background: var(--deep);
+      border-bottom: 1px solid var(--rim);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .console-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--blue);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .dot-group { display: flex; gap: 6px; }
+    .dot-btn { width:10px;height:10px;border-radius:50%; }
+    .dot-btn.r{background:#ef4444;} .dot-btn.y{background:#f59e0b;} .dot-btn.g{background:#22c55e;}
+
+    /* Console body */
+    .console-body { padding: 20px 18px 18px; }
+
+    /* Fuel rods = lives */
+    .fuel-section { margin-bottom: 18px; }
+    .fuel-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .fuel-rods {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .fuel-rod {
+      width: 28px;
+      height: 52px;
+      border-radius: 4px 4px 2px 2px;
+      background: linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%);
+      border: 1px solid rgba(96,165,250,0.4);
+      box-shadow: 0 0 12px rgba(59,130,246,0.4), inset 0 0 8px rgba(255,255,255,0.1);
+      position: relative;
+      transition: all 0.5s ease;
+      overflow: hidden;
+    }
+    .fuel-rod::before {
+      content:'';
+      position:absolute;
+      top:0;left:0;right:0;
+      height:40%;
+      background:rgba(255,255,255,0.15);
+      border-radius:4px 4px 0 0;
+    }
+    /* shimmer effect */
+    .fuel-rod::after {
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+      animation:shimmer 2.5s ease infinite;
+    }
+    @keyframes shimmer {
+      from{transform:translateX(-100%)} to{transform:translateX(200%)}
+    }
+    .fuel-rod.depleted {
+      background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);
+      border-color:rgba(51,65,85,0.5);
+      box-shadow:none;
+      height:20px;
+    }
+    .fuel-rod.depleted::after,.fuel-rod.depleted::before { display:none; }
+    .fuel-rod.draining { animation:drainAnim 0.6s ease forwards; }
+    @keyframes drainAnim {
+      0%  { transform:scale(1.15); box-shadow:0 0 25px rgba(249,115,22,0.8); background:linear-gradient(180deg,#fb923c,#ea580c); }
+      60% { height:52px; }
+      100%{ height:20px; background:linear-gradient(180deg,#1e293b,#0f172a); border-color:rgba(51,65,85,0.5); box-shadow:none; }
+    }
+    .fuel-count {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+      margin-left: 8px;
+      align-self: center;
+    }
+
+    /* Sensor bar */
+    .sensor-bar { margin-bottom: 18px; opacity:0; transition:opacity 0.4s; }
+    .sensor-bar.on { opacity:1; }
+    .sensor-header {
+      display:flex;
+      justify-content:space-between;
+      font-family:var(--mono);
+      font-size:9px;
+      color:var(--muted);
+      letter-spacing:2px;
+      margin-bottom:5px;
+    }
+    .sensor-track {
+      height:10px;
+      background:var(--deep);
+      border:1px solid var(--rim);
+      border-radius:2px;
+      overflow:hidden;
+      position:relative;
+    }
+    .sensor-fill {
+      height:100%;
+      border-radius:2px;
+      transition:width 0.8s cubic-bezier(0.34,1.2,0.64,1), background 0.6s;
+      width:0%;
+      position:relative;
+    }
+    .sensor-fill::after {
+      content:'';
+      position:absolute;
+      top:0;right:0;
+      width:4px;height:100%;
+      background:rgba(255,255,255,0.6);
+      border-radius:0 2px 2px 0;
+    }
+
+    /* Terminal input */
+    .terminal-row {
+      display:flex;
+      align-items:center;
+      gap:0;
+      background:var(--deep);
+      border:1px solid var(--rim);
+      border-radius:4px;
+      margin-bottom:14px;
+      transition:border-color 0.2s, box-shadow 0.2s;
+      overflow:hidden;
+    }
+    .terminal-row:focus-within {
+      border-color:var(--blue);
+      box-shadow:0 0 0 2px rgba(59,130,246,0.15);
+    }
+    .terminal-prompt {
+      padding:0 12px;
+      font-family:var(--mono);
+      font-size:13px;
+      color:var(--blue);
+      background:rgba(59,130,246,0.07);
+      border-right:1px solid var(--rim);
+      height:100%;
+      display:flex;
+      align-items:center;
+      white-space:nowrap;
+      align-self:stretch;
     }
     #guessInput {
-      width: 100%;
-      padding: 15px 15px 15px 60px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px; letter-spacing: 6px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      color: var(--text); outline: none;
-      caret-color: var(--accent);
-      transition: border-color 0.2s, box-shadow 0.2s;
+      flex:1;
+      padding:14px 14px;
+      font-family:var(--mono);
+      font-size:26px;
+      font-weight:700;
+      letter-spacing:8px;
+      background:transparent;
+      border:none;
+      color:var(--ice);
+      outline:none;
+      caret-color:var(--glow);
     }
-    #guessInput:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent), inset 0 0 20px rgba(74,222,128,0.04);
-    }
-    #guessInput:disabled { opacity: 0.35; cursor: not-allowed; }
+    #guessInput::placeholder { color:var(--dim); font-size:14px; letter-spacing:3px; }
+    #guessInput:disabled { opacity:0.3; cursor:not-allowed; }
     #guessInput::-webkit-inner-spin-button,
-    #guessInput::-webkit-outer-spin-button { -webkit-appearance: none; }
-    #guessInput::placeholder { color: var(--muted); font-size: 16px; letter-spacing: 3px; }
+    #guessInput::-webkit-outer-spin-button { -webkit-appearance:none; }
 
-    /* RESULT */
+    /* Result */
     #result {
-      min-height: 44px;
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px; letter-spacing: 4px; text-align: center;
-      border-radius: 2px; margin-bottom: 14px; transition: all 0.2s ease;
+      min-height:46px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:var(--mono);
+      font-size:13px;
+      letter-spacing:2px;
+      text-align:center;
+      border-radius:4px;
+      margin-bottom:14px;
+      transition:all 0.2s;
     }
-    #result.show { animation: resultSlam 0.35s cubic-bezier(0.34,1.4,0.64,1); }
-    @keyframes resultSlam {
-      from { transform: scale(0.7) translateY(10px); opacity:0; }
-      to   { transform: scale(1) translateY(0); opacity:1; }
-    }
-    #result.hit    { color: var(--accent); background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.2); padding:10px; }
-    #result.miss   { color: var(--danger); background: rgba(239,68,68,0.07);  border: 1px solid rgba(239,68,68,0.2);  padding:10px; }
-    #result.higher { color: var(--warn);   background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2); padding:10px; }
-    #result.lower  { color: var(--warn);   background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2); padding:10px; }
-    #result.error  { color: var(--danger); padding:10px; }
+    #result.active { animation:resultIn 0.3s cubic-bezier(0.34,1.4,0.64,1); padding:12px; }
+    @keyframes resultIn { from{transform:translateY(8px);opacity:0} to{transform:translateY(0);opacity:1} }
+    #result.win  { color:var(--green);  background:rgba(16,185,129,0.08);  border:1px solid rgba(16,185,129,0.25); }
+    #result.lose { color:var(--red);    background:rgba(239,68,68,0.08);   border:1px solid rgba(239,68,68,0.25); }
+    #result.high { color:var(--orange); background:rgba(249,115,22,0.08);  border:1px solid rgba(249,115,22,0.2); }
+    #result.low  { color:var(--orange); background:rgba(249,115,22,0.08);  border:1px solid rgba(249,115,22,0.2); }
+    #result.err  { color:var(--red);    padding:12px; }
 
-    /* PROXIMITY BAR */
-    .proximity-wrap { margin-bottom: 16px; opacity: 0; transition: opacity 0.4s ease; }
-    .proximity-wrap.visible { opacity: 1; }
-    .prox-header {
-      display: flex; justify-content: space-between;
-      font-size: 9px; letter-spacing: 3px; color: var(--text-dim);
-      text-transform: uppercase; margin-bottom: 6px;
+    /* Buttons */
+    .btn-launch {
+      width:100%;
+      padding:15px;
+      font-family:'Exo 2',sans-serif;
+      font-weight:900;
+      font-size:17px;
+      letter-spacing:4px;
+      text-transform:uppercase;
+      border:none;
+      border-radius:4px;
+      cursor:pointer;
+      background:linear-gradient(135deg,#1d4ed8,#2563eb,#3b82f6);
+      color:#fff;
+      box-shadow:0 4px 20px rgba(59,130,246,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+      transition:all 0.15s ease;
+      position:relative;
+      overflow:hidden;
+      margin-bottom:10px;
     }
-    .prox-track {
-      height: 8px; background: var(--surface2);
-      border: 1px solid var(--border); border-radius: 1px;
-      overflow: hidden; position: relative;
+    .btn-launch::before {
+      content:'';
+      position:absolute;
+      top:0;left:-100%;width:60%;height:100%;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);
+      transition:left 0.5s ease;
     }
-    .prox-fill {
-      height: 100%; border-radius: 1px;
-      transition: width 0.7s cubic-bezier(0.34,1.2,0.64,1), background 0.7s ease;
-      width: 0%;
+    .btn-launch:hover::before { left:150%; }
+    .btn-launch:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(59,130,246,0.5); }
+    .btn-launch:active { transform:scale(0.98); }
+    .btn-launch:disabled { background:var(--dim); box-shadow:none; cursor:not-allowed; transform:none; }
+
+    .btn-abort {
+      width:100%;
+      padding:11px;
+      font-family:'Exo 2',sans-serif;
+      font-weight:700;
+      font-size:13px;
+      letter-spacing:3px;
+      text-transform:uppercase;
+      border:1px solid var(--rim);
+      border-radius:4px;
+      cursor:pointer;
+      background:transparent;
+      color:var(--muted);
+      transition:all 0.15s ease;
+    }
+    .btn-abort:hover { border-color:var(--muted); color:var(--text); background:rgba(255,255,255,0.03); }
+
+    /* ── MISSION LOG ── */
+    .log-section {
+      margin-top:20px;
+      animation: fadeIn 1s ease 0.4s both;
+    }
+    .log-header {
+      font-family:var(--mono);
+      font-size:9px;
+      color:var(--muted);
+      letter-spacing:3px;
+      text-transform:uppercase;
+      margin-bottom:8px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .log-header::after {
+      content:'';flex:1;height:1px;background:var(--rim);
+    }
+    .log-entries {
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      max-height:120px;
+      overflow-y:auto;
+    }
+    .log-entries::-webkit-scrollbar { width:3px; }
+    .log-entries::-webkit-scrollbar-track { background:transparent; }
+    .log-entries::-webkit-scrollbar-thumb { background:var(--rim); border-radius:2px; }
+    .log-entry {
+      font-family:var(--mono);
+      font-size:11px;
+      color:var(--muted);
+      padding:5px 10px;
+      background:var(--card);
+      border:1px solid var(--rim);
+      border-radius:3px;
+      display:flex;
+      gap:10px;
+      animation:logIn 0.3s ease;
+    }
+    @keyframes logIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+    .log-time { color:var(--dim); min-width:60px; }
+    .log-msg.ok  { color:var(--green); }
+    .log-msg.bad { color:var(--red); }
+    .log-msg.mid { color:var(--orange); }
+
+    /* ── DEBRIS PARTICLES ── */
+    .debris {
+      position:fixed;
+      pointer-events:none;
+      font-size:16px;
+      z-index:999;
+      animation:debriFly 1.2s ease-out forwards;
+    }
+    @keyframes debriFly {
+      0%  {transform:translate(0,0) scale(1) rotate(0deg);opacity:1;}
+      100%{transform:translate(var(--dx),var(--dy)) scale(0) rotate(var(--dr));opacity:0;}
     }
 
-    /* BUTTONS */
-    .btn-fire {
-      width: 100%; padding: 16px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px; letter-spacing: 5px;
-      border: none; border-radius: 2px; cursor: pointer;
-      background: var(--accent); color: #0a0a0a;
-      transition: all 0.15s ease;
-      position: relative; overflow: hidden; margin-bottom: 10px;
-    }
-    .btn-fire::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-    }
-    .btn-fire:hover { background: #6ee7a0; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(74,222,128,0.35); }
-    .btn-fire:active { transform: scale(0.98) translateY(0); }
-    .btn-fire:disabled { background: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
-
-    .btn-reset {
-      width: 100%; padding: 12px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 15px; letter-spacing: 4px;
-      border: 1px solid var(--border); border-radius: 2px; cursor: pointer;
-      background: transparent; color: var(--muted); transition: all 0.15s ease;
-    }
-    .btn-reset:hover { border-color: var(--text-dim); color: var(--text); background: rgba(255,255,255,0.03); }
-
-    /* STATS FOOTER */
-    .stats-footer {
-      display: grid; grid-template-columns: repeat(4,1fr);
-      border-top: 1px solid var(--border); background: var(--surface2);
-    }
-    .stat-cell {
-      padding: 10px 8px; text-align: center;
-      border-right: 1px solid var(--border);
-    }
-    .stat-cell:last-child { border-right: none; }
-    .stat-val { font-family: 'Share Tech Mono', monospace; font-size: 16px; color: var(--text); line-height: 1; }
-    .stat-label { font-size: 8px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
-
-    /* PARTICLES */
-    .blast {
-      position: fixed; pointer-events: none;
-      font-size: 18px; z-index: 999;
-      animation: blastFly 1s ease-out forwards;
-    }
-    @keyframes blastFly {
-      0%   { transform: translate(0,0) scale(1) rotate(0deg); opacity:1; }
-      100% { transform: translate(var(--bx),var(--by)) scale(0.1) rotate(var(--br)); opacity:0; }
-    }
-
-    /* UTILS */
-    @keyframes slideDown { from{transform:translateY(-25px);opacity:0} to{transform:translateY(0);opacity:1} }
-    @keyframes fadeUp    { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+    /* ── UTILS ── */
+    @keyframes fadeIn { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
     @keyframes shake {
       0%,100%{transform:translateX(0)}
-      20%{transform:translateX(-8px)} 40%{transform:translateX(8px)}
-      60%{transform:translateX(-5px)} 80%{transform:translateX(5px)}
+      20%{transform:translateX(-7px)} 40%{transform:translateX(7px)}
+      60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
     }
-    .shake { animation: shake 0.4s ease; }
-    @keyframes winFlash {
-      0%,100%{border-color:var(--border)}
-      25%,75%{border-color:var(--accent);box-shadow:0 0 30px rgba(74,222,128,0.3)}
+    .shake { animation:shake 0.4s ease; }
+    @keyframes winPulse {
+      0%,100%{border-color:var(--rim)}
+      50%{border-color:var(--green);box-shadow:0 0 40px rgba(16,185,129,0.2);}
     }
-    .win-flash { animation: winFlash 0.5s ease 4; }
+    .win-pulse { animation:winPulse 0.6s ease 4; }
 
     @media(max-width:480px){
-      .title-block h1{font-size:48px}
-      .stats-footer{grid-template-columns:repeat(2,1fr)}
-      .stat-cell:nth-child(2){border-right:none}
-      .stat-cell:nth-child(3){border-right:1px solid var(--border)}
+      .mission-title{font-size:28px;}
+      .fuel-rod{width:22px;height:44px;}
     }
   </style>
 </head>
 <body>
 
-<canvas id="radar-canvas"></canvas>
+<canvas id="stars"></canvas>
+<div class="nebula nb1"></div>
+<div class="nebula nb2"></div>
+<div class="nebula nb3"></div>
 
-<div class="wrapper">
+<div class="page">
 
-  <div class="top-bar">
-    <div class="top-bar-left">
-      <div class="status-dot"></div>
-      <div class="status-text">SYSTEM ONLINE</div>
-    </div>
-    <div class="mission-id" id="missionId">MIS-001</div>
+  <!-- Header -->
+  <div class="header-bar">
+    <div class="agency-tag">DEEP SPACE OPS // v2.4.1</div>
+    <div class="live-tag"><div class="live-dot"></div>TRANSMISSION LIVE</div>
   </div>
 
-  <div class="title-block">
-    <h1>TARGET <span>LOCK</span></h1>
-    <div class="title-sub">Number Guessing Protocol — Classified</div>
+  <!-- Planet section -->
+  <div class="planet-section">
+    <div class="orbit-wrapper">
+      <div class="orbit-ring ring1"></div>
+      <div class="orbit-ring ring2"></div>
+      <canvas id="planetCanvas" width="90" height="90"></canvas>
+    </div>
+    <div class="mission-title">DEEP <span>SPACE</span></div>
+    <div class="mission-sub">[ COORDINATE LOCK PROTOCOL ]</div>
   </div>
 
-  <div class="panel" id="mainPanel">
+  <!-- Telemetry -->
+  <div class="telemetry">
+    <div class="telem-cell">
+      <div class="telem-label">Min Coord</div>
+      <div class="telem-val">001</div>
+    </div>
+    <div class="telem-cell">
+      <div class="telem-label">Target</div>
+      <div class="telem-val" style="font-size:16px;letter-spacing:3px">UNKNOWN</div>
+    </div>
+    <div class="telem-cell">
+      <div class="telem-label">Max Coord</div>
+      <div class="telem-val">100</div>
+    </div>
+  </div>
 
-    <div class="hud-strip">
-      <div class="hud-cell">
-        <div class="hud-label">Range Min</div>
-        <div class="hud-val">001</div>
-      </div>
-      <div class="hud-divider"></div>
-      <div class="hud-cell">
-        <div class="hud-label">Target</div>
-        <div class="hud-val" style="letter-spacing:4px">???</div>
-      </div>
-      <div class="hud-divider"></div>
-      <div class="hud-cell">
-        <div class="hud-label">Range Max</div>
-        <div class="hud-val">100</div>
+  <!-- Main Console -->
+  <div class="console" id="console">
+    <div class="console-topbar">
+      <div class="console-title">MISSION CONSOLE</div>
+      <div class="dot-group">
+        <div class="dot-btn r"></div>
+        <div class="dot-btn y"></div>
+        <div class="dot-btn g"></div>
       </div>
     </div>
+    <div class="console-body">
 
-    <div style="padding:18px 20px 20px;">
-
-      <!-- Crosshair graphic -->
-      <div class="crosshair-wrap">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="44" fill="none" stroke="#4ade80" stroke-width="1" stroke-dasharray="8 4" opacity="0.4"/>
-          <circle class="inner-ring" cx="50" cy="50" r="12" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.8"/>
-          <line x1="50" y1="2"  x2="50" y2="30" stroke="#4ade80" stroke-width="1.5" opacity="0.9"/>
-          <line x1="50" y1="70" x2="50" y2="98" stroke="#4ade80" stroke-width="1.5" opacity="0.9"/>
-          <line x1="2"  y1="50" x2="30" y2="50" stroke="#4ade80" stroke-width="1.5" opacity="0.9"/>
-          <line x1="70" y1="50" x2="98" y2="50" stroke="#4ade80" stroke-width="1.5" opacity="0.9"/>
-          <circle cx="50" cy="50" r="3" fill="#4ade80"/>
-          <line x1="50" y1="35" x2="50" y2="40" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
-          <line x1="50" y1="60" x2="50" y2="65" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
-          <line x1="35" y1="50" x2="40" y2="50" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
-          <line x1="60" y1="50" x2="65" y2="50" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
-          <path d="M 10 20 L 10 10 L 20 10" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.5"/>
-          <path d="M 80 10 L 90 10 L 90 20" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.5"/>
-          <path d="M 10 80 L 10 90 L 20 90" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.5"/>
-          <path d="M 80 90 L 90 90 L 90 80" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.5"/>
-        </svg>
-      </div>
-
-      <!-- Ammo row — bullets instead of hearts -->
-      <div class="ammo-section">
-        <div class="ammo-label">Ammunition Remaining</div>
-        <div class="ammo-row" id="ammoRow">
-          <div class="bullet">🔫</div>
-          <div class="bullet">🔫</div>
-          <div class="bullet">🔫</div>
-          <div class="bullet">🔫</div>
-          <div class="bullet">🔫</div>
-          <div class="ammo-text" id="ammoText">5 / 5</div>
+      <!-- Fuel rods = lives -->
+      <div class="fuel-section">
+        <div class="fuel-label">Reactor Cores — Remaining</div>
+        <div class="fuel-rods" id="fuelRods">
+          <div class="fuel-rod"></div>
+          <div class="fuel-rod"></div>
+          <div class="fuel-rod"></div>
+          <div class="fuel-rod"></div>
+          <div class="fuel-rod"></div>
+          <div class="fuel-count" id="fuelCount">5 / 5</div>
         </div>
       </div>
 
-      <!-- Proximity sensor -->
-      <div class="proximity-wrap" id="proxWrap">
-        <div class="prox-header">
-          <span>◀ Ice Cold</span>
-          <span>Proximity Sensor</span>
-          <span>Scorching ▶</span>
+      <!-- Sensor -->
+      <div class="sensor-bar" id="sensorBar">
+        <div class="sensor-header">
+          <span>◀ DEEP SPACE</span>
+          <span>PROXIMITY SENSOR</span>
+          <span>ON TARGET ▶</span>
         </div>
-        <div class="prox-track">
-          <div class="prox-fill" id="proxFill"></div>
+        <div class="sensor-track">
+          <div class="sensor-fill" id="sensorFill"></div>
         </div>
       </div>
 
-      <!-- Input -->
-      <div class="input-group">
-        <div class="input-prefix">TGT ›</div>
+      <!-- Terminal input -->
+      <div class="terminal-row">
+        <div class="terminal-prompt">$ coord_</div>
         <input
-          type="number" id="guessInput"
-          placeholder="ENTER CODE"
+          type="number"
+          id="guessInput"
+          placeholder="_ _ _"
           min="1" max="100"
-          inputmode="numeric" autocomplete="off"
+          inputmode="numeric"
+          autocomplete="off"
         />
       </div>
 
+      <!-- Result -->
       <div id="result"></div>
 
-      <button class="btn-fire" id="guessBtn">⚡ FIRE SHOT</button>
-      <button class="btn-reset" id="restartBtn">↺ NEW MISSION</button>
-    </div>
-
-    <div class="stats-footer">
-      <div class="stat-cell"><div class="stat-val" id="statShots">0</div><div class="stat-label">Shots</div></div>
-      <div class="stat-cell"><div class="stat-val" id="statAmmo">5</div><div class="stat-label">Ammo Left</div></div>
-      <div class="stat-cell"><div class="stat-val" id="statWins">0</div><div class="stat-label">Wins</div></div>
-      <div class="stat-cell"><div class="stat-val" id="statMissions">1</div><div class="stat-label">Missions</div></div>
+      <!-- Buttons -->
+      <button class="btn-launch" id="guessBtn">🚀 LAUNCH PROBE</button>
+      <button class="btn-abort"  id="restartBtn">⊘ ABORT &amp; NEW MISSION</button>
     </div>
   </div>
+
+  <!-- Mission Log -->
+  <div class="log-section">
+    <div class="log-header">Mission Log</div>
+    <div class="log-entries" id="logEntries">
+      <div class="log-entry">
+        <span class="log-time">[00:00]</span>
+        <span class="log-msg">System initialized. Awaiting coordinate input.</span>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
-/* RADAR */
+/* ── STARFIELD ── */
 (function(){
-  const c = document.getElementById('radar-canvas');
-  const cx = c.getContext('2d');
-  c.width = 380; c.height = 380;
-  let angle = 0;
+  const c = document.getElementById('stars');
+  const ctx = c.getContext('2d');
+  let stars;
+  function init(){
+    c.width = window.innerWidth; c.height = window.innerHeight;
+    stars = Array.from({length:200},()=>({
+      x:Math.random()*c.width, y:Math.random()*c.height,
+      r:Math.random()*1.2+0.2,
+      op:Math.random(), dir:Math.random()>0.5?1:-1,
+      speed:Math.random()*0.006+0.002
+    }));
+  }
   function draw(){
-    cx.clearRect(0,0,380,380);
-    const ox=190,oy=190;
-    [40,80,120,160,190].forEach(r=>{
-      cx.beginPath(); cx.arc(ox,oy,r,0,Math.PI*2);
-      cx.strokeStyle='rgba(74,222,128,0.4)'; cx.lineWidth=0.8; cx.stroke();
-    });
-    cx.strokeStyle='rgba(74,222,128,0.3)'; cx.lineWidth=0.8;
-    cx.beginPath(); cx.moveTo(ox,0); cx.lineTo(ox,380); cx.stroke();
-    cx.beginPath(); cx.moveTo(0,oy); cx.lineTo(380,oy); cx.stroke();
-    cx.save(); cx.translate(ox,oy); cx.rotate(angle);
-    const g=cx.createLinearGradient(0,-190,0,0);
-    g.addColorStop(0,'rgba(74,222,128,0)');
-    g.addColorStop(1,'rgba(74,222,128,0.25)');
-    cx.beginPath(); cx.moveTo(0,0); cx.arc(0,0,190,-Math.PI/2,-Math.PI/2+1.0);
-    cx.fillStyle=g; cx.fill(); cx.restore();
-    angle+=0.015; requestAnimationFrame(draw);
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const s of stars){
+      s.op += s.speed * s.dir;
+      if(s.op>=1||s.op<=0) s.dir*=-1;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(180,210,255,${s.op*0.85})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  init(); draw();
+  window.addEventListener('resize',init);
+})();
+
+/* ── PLANET ── */
+(function(){
+  const c = document.getElementById('planetCanvas');
+  const ctx = c.getContext('2d');
+  let offset = 0;
+  function draw(){
+    ctx.clearRect(0,0,90,90);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(45,45,38,0,Math.PI*2);
+    ctx.clip();
+    // base
+    const bg = ctx.createLinearGradient(0,0,90,90);
+    bg.addColorStop(0,'#1e3a5f');
+    bg.addColorStop(0.5,'#1d4ed8');
+    bg.addColorStop(1,'#0f172a');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,90,90);
+    // cloud bands
+    const bands = [
+      {y:20,h:8,c:'rgba(96,165,250,0.25)',speed:0.3},
+      {y:35,h:12,c:'rgba(147,197,253,0.15)',speed:0.5},
+      {y:52,h:7,c:'rgba(59,130,246,0.2)',speed:0.4},
+      {y:64,h:9,c:'rgba(30,64,175,0.3)',speed:0.25},
+    ];
+    for(const b of bands){
+      ctx.fillStyle = b.c;
+      ctx.beginPath();
+      const s = (offset * b.speed) % 90;
+      ctx.rect(-s, b.y, 90+s, b.h);
+      ctx.fill();
+    }
+    // atmosphere rim
+    const rim = ctx.createRadialGradient(45,45,30,45,45,43);
+    rim.addColorStop(0,'transparent');
+    rim.addColorStop(0.7,'transparent');
+    rim.addColorStop(1,'rgba(96,165,250,0.35)');
+    ctx.fillStyle = rim;
+    ctx.beginPath(); ctx.arc(45,45,38,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+    offset++;
+    requestAnimationFrame(draw);
   }
   draw();
 })();
 
-/* GAME */
-let secret=rand(), shots=0, ammoLeft=5, wins=0, missions=1;
+/* ── GAME ── */
+let secret = rand(), lives = 5, shots = 0, missionNum = 1;
+let wins = 0, startTime = Date.now();
 function rand(){ return Math.floor(Math.random()*100)+1; }
 
-const input     = document.getElementById('guessInput');
-const resultEl  = document.getElementById('result');
-const guessBtn  = document.getElementById('guessBtn');
-const restartBtn= document.getElementById('restartBtn');
-const ammoRow   = document.getElementById('ammoRow');
-const ammoText  = document.getElementById('ammoText');
-const proxWrap  = document.getElementById('proxWrap');
-const proxFill  = document.getElementById('proxFill');
-const panel     = document.getElementById('mainPanel');
-const missionId = document.getElementById('missionId');
-const statShots    = document.getElementById('statShots');
-const statAmmo     = document.getElementById('statAmmo');
-const statWins     = document.getElementById('statWins');
-const statMissions = document.getElementById('statMissions');
+const input      = document.getElementById('guessInput');
+const resultEl   = document.getElementById('result');
+const guessBtn   = document.getElementById('guessBtn');
+const restartBtn = document.getElementById('restartBtn');
+const fuelRods   = document.getElementById('fuelRods');
+const fuelCount  = document.getElementById('fuelCount');
+const sensorBar  = document.getElementById('sensorBar');
+const sensorFill = document.getElementById('sensorFill');
+const consoleEl  = document.getElementById('console');
+const logEntries = document.getElementById('logEntries');
 
-function getBullets(){ return ammoRow.querySelectorAll('.bullet'); }
+function getRods(){ return fuelRods.querySelectorAll('.fuel-rod'); }
 
-function updateProximity(guess){
-  const diff=Math.abs(guess-secret);
-  const hot=Math.max(0,100-diff*2);
-  proxWrap.classList.add('visible');
-  proxFill.style.width=hot+'%';
-  if(hot>70){ proxFill.style.background='linear-gradient(90deg,#f59e0b,#ef4444)'; proxFill.style.boxShadow='0 0 8px rgba(239,68,68,0.5)'; }
-  else if(hot>35){ proxFill.style.background='linear-gradient(90deg,#22c55e,#f59e0b)'; proxFill.style.boxShadow=''; }
-  else{ proxFill.style.background='linear-gradient(90deg,#3b82f6,#22c55e)'; proxFill.style.boxShadow=''; }
+function getTime(){
+  const s = Math.floor((Date.now()-startTime)/1000);
+  return '['+String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')+']';
 }
 
-function spendBullet(){
-  const active=Array.from(getBullets()).filter(b=>!b.classList.contains('spent'));
+function addLog(msg, cls=''){
+  const el = document.createElement('div');
+  el.className = 'log-entry';
+  el.innerHTML = `<span class="log-time">${getTime()}</span><span class="log-msg ${cls}">${msg}</span>`;
+  logEntries.appendChild(el);
+  logEntries.scrollTop = logEntries.scrollHeight;
+}
+
+function updateSensor(guess){
+  const diff = Math.abs(guess - secret);
+  const hot = Math.max(0, 100 - diff*2);
+  sensorBar.classList.add('on');
+  sensorFill.style.width = hot+'%';
+  if(hot>70){ sensorFill.style.background='linear-gradient(90deg,#f97316,#ef4444)'; sensorFill.style.boxShadow='0 0 8px rgba(239,68,68,0.5)'; }
+  else if(hot>40){ sensorFill.style.background='linear-gradient(90deg,#22c55e,#f97316)'; sensorFill.style.boxShadow=''; }
+  else { sensorFill.style.background='linear-gradient(90deg,#1d4ed8,#3b82f6)'; sensorFill.style.boxShadow=''; }
+}
+
+function burnRod(){
+  const active = Array.from(getRods()).filter(r=>!r.classList.contains('depleted'));
   if(!active.length) return;
-  const last=active[active.length-1];
-  last.classList.add('firing');
-  setTimeout(()=>last.classList.add('spent'),450);
+  const r = active[active.length-1];
+  r.classList.add('draining');
+  setTimeout(()=>{ r.classList.remove('draining'); r.classList.add('depleted'); },600);
 }
 
-function setResult(text,cls){
-  resultEl.textContent=text;
-  resultEl.className='show '+cls;
+function setResult(txt,cls){
+  resultEl.textContent=txt;
+  resultEl.className='active '+cls;
 }
 
-function blast(type){
-  const icons=type==='win'?['💥','🎯','⭐','🔥','💫','✅','🏆']:['💥','☠️','🔴','⚡','🚨'];
+function explode(type){
+  const icons = type==='win'
+    ? ['🚀','⭐','💫','🌟','✅','🛸','☄️']
+    : ['💥','🌑','⚡','🔴','☠️','🌪️'];
   const cx=window.innerWidth/2, cy=window.innerHeight/2;
-  for(let i=0;i<18;i++){
+  for(let i=0;i<22;i++){
     const el=document.createElement('div');
-    el.className='blast';
+    el.className='debris';
     el.textContent=icons[i%icons.length];
-    const a=(i/18)*Math.PI*2, d=100+Math.random()*180;
+    const a=(i/22)*Math.PI*2, d=80+Math.random()*220;
     el.style.left=cx+'px'; el.style.top=cy+'px';
-    el.style.setProperty('--bx',(Math.cos(a)*d)+'px');
-    el.style.setProperty('--by',(Math.sin(a)*d)+'px');
-    el.style.setProperty('--br',(Math.random()*720-360)+'deg');
-    el.style.animationDelay=(Math.random()*0.2)+'s';
+    el.style.setProperty('--dx',(Math.cos(a)*d)+'px');
+    el.style.setProperty('--dy',(Math.sin(a)*d)+'px');
+    el.style.setProperty('--dr',(Math.random()*720-360)+'deg');
+    el.style.animationDelay=(Math.random()*0.25)+'s';
     document.body.appendChild(el);
-    setTimeout(()=>el.remove(),1200);
+    setTimeout(()=>el.remove(),1500);
   }
 }
 
-function updateStats(){
-  statShots.textContent=shots;
-  statAmmo.textContent=ammoLeft;
-  statWins.textContent=wins;
-  statMissions.textContent=missions;
-  if(ammoLeft<=1) statAmmo.style.color='var(--danger)';
-  else if(ammoLeft<=2) statAmmo.style.color='var(--warn)';
-  else statAmmo.style.color='';
-}
+function disable(){ input.disabled=true; guessBtn.disabled=true; }
 
 function checkGuess(){
-  const val=Number(input.value);
+  const val = Number(input.value);
   if(!val||val<1||val>100||!Number.isInteger(val)){
-    setResult('▸ INVALID COORDINATE — Enter 1 to 100','error');
-    panel.classList.add('shake');
-    setTimeout(()=>panel.classList.remove('shake'),400);
+    setResult('⚠ INVALID COORDINATE — Range: 1 to 100','err');
+    consoleEl.classList.add('shake');
+    setTimeout(()=>consoleEl.classList.remove('shake'),400);
+    addLog('Invalid coordinate entered.','bad');
     input.value=''; return;
   }
-  shots++; ammoLeft--;
-  updateProximity(val); spendBullet();
-  ammoText.textContent=`${ammoLeft} / 5`;
-  updateStats();
+
+  shots++; lives--;
+  updateSensor(val);
+  burnRod();
+  fuelCount.textContent=`${lives} / 5`;
+
+  // update telem ammo color
+  const ammoEl = document.querySelectorAll('.telem-val')[1];
+  if(lives<=1) ammoEl && (ammoEl.className='telem-val crit');
+  else if(lives<=2) ammoEl && (ammoEl.className='telem-val warn');
 
   if(val===secret){
-    setResult('🎯  TARGET CONFIRMED — MISSION COMPLETE!','hit');
-    panel.classList.add('win-flash');
-    blast('win'); wins++;
-    disableGame();
-    guessBtn.textContent='🏆 MISSION COMPLETE';
-    updateStats();
-  } else if(ammoLeft===0){
-    setResult(`☠️  AMMO DEPLETED — TARGET WAS ${secret}`,'miss');
-    blast('lose'); disableGame();
+    setResult('✅  COORDINATE LOCKED — TARGET ACQUIRED!','win');
+    consoleEl.classList.add('win-pulse');
+    explode('win'); wins++;
+    disable();
+    guessBtn.textContent='🏆 MISSION SUCCESS';
+    addLog(`TARGET CONFIRMED at coordinate ${secret}.`,'ok');
+  } else if(lives===0){
+    setResult(`💥  REACTOR DEPLETED — COORDINATE WAS ${secret}`,'lose');
+    explode('lose'); disable();
     guessBtn.textContent='☠️ MISSION FAILED';
+    addLog(`Mission failed. Target was ${secret}.`,'bad');
   } else if(val>secret){
-    setResult('⬆  OVERSHOT — Adjust aim lower','higher');
+    setResult('📡  SIGNAL OVERSHOOTS — Vector too high','high');
+    addLog(`Probe ${val} → overshot. Adjust lower. (${lives} cores left)`,'mid');
   } else {
-    setResult('⬇  UNDERSHOT — Aim higher','lower');
+    setResult('📡  SIGNAL UNDERSHOOTS — Vector too low','low');
+    addLog(`Probe ${val} → undershot. Adjust higher. (${lives} cores left)`,'mid');
   }
+
   input.value=''; input.focus();
 }
 
-function disableGame(){ input.disabled=true; guessBtn.disabled=true; }
-
 function restartGame(){
-  secret=rand(); shots=0; ammoLeft=5; missions++;
-  getBullets().forEach(b=>b.classList.remove('spent','firing'));
-  ammoText.textContent='5 / 5';
-  proxWrap.classList.remove('visible');
-  proxFill.style.width='0%';
+  secret=rand(); lives=5; shots=0; missionNum++;
+  startTime=Date.now();
+  getRods().forEach(r=>r.classList.remove('depleted','draining'));
+  fuelCount.textContent='5 / 5';
+  sensorBar.classList.remove('on');
+  sensorFill.style.width='0%';
   resultEl.textContent=''; resultEl.className='';
-  panel.classList.remove('win-flash');
-  guessBtn.textContent='⚡ FIRE SHOT';
+  consoleEl.classList.remove('win-pulse');
+  guessBtn.textContent='🚀 LAUNCH PROBE';
   input.disabled=false; guessBtn.disabled=false;
   input.value=''; input.focus();
-  missionId.textContent='MIS-'+String(missions).padStart(3,'0');
-  updateStats();
+  document.querySelectorAll('.telem-val').forEach(v=>v.className='telem-val');
+  addLog(`Mission #${missionNum} initialized. New target locked.`);
 }
 
 guessBtn.addEventListener('click',checkGuess);
 restartBtn.addEventListener('click',restartGame);
 input.addEventListener('keydown',e=>{ if(e.key==='Enter') checkGuess(); });
-updateStats();
 </script>
 </body>
 </html>
