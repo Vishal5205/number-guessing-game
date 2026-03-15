@@ -1,35 +1,585 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Number Guessing Game</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="style.css">
-<link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8"/>
+  <title>TARGET LOCK — Number Guessing Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #0d0f0d;
+      --surface:   #141814;
+      --surface2:  #1a1f1a;
+      --border:    #2a3a2a;
+      --accent:    #4ade80;
+      --accent2:   #22c55e;
+      --danger:    #ef4444;
+      --warn:      #f59e0b;
+      --muted:     #4b5563;
+      --text:      #e5e7eb;
+      --text-dim:  #6b7280;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: 'Barlow Condensed', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(74,222,128,0.06) 0%, transparent 60%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #radar-canvas {
+      position: fixed;
+      top: -100px; right: -100px;
+      width: 380px; height: 380px;
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* TOP BAR */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      animation: slideDown 0.5s ease both;
+    }
+    .top-bar-left { display: flex; align-items: center; gap: 10px; }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .status-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px; color: var(--accent);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    .mission-id {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; color: var(--muted); letter-spacing: 1px;
+    }
+
+    /* TITLE */
+    .title-block {
+      text-align: center;
+      margin-bottom: 20px;
+      animation: slideDown 0.6s ease 0.1s both;
+    }
+    .title-block h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(42px, 10vw, 68px);
+      color: var(--text);
+      letter-spacing: 6px;
+      line-height: 1;
+      text-shadow: 0 0 40px rgba(74,222,128,0.15);
+    }
+    .title-block h1 span { color: var(--accent); }
+    .title-sub {
+      font-size: 11px; letter-spacing: 5px;
+      color: var(--muted); text-transform: uppercase; margin-top: 4px;
+    }
+
+    /* PANEL */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      animation: fadeUp 0.7s ease 0.2s both;
+      position: relative;
+    }
+    .panel::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+
+    /* HUD STRIP */
+    .hud-strip {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr 1px 1fr;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .hud-divider { background: var(--border); }
+    .hud-cell { padding: 12px 16px; text-align: center; }
+    .hud-label { font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 3px; }
+    .hud-val { font-family: 'Share Tech Mono', monospace; font-size: 20px; color: var(--accent); line-height: 1; }
+
+    /* AMMO */
+    .ammo-section { padding: 0 0 16px; border: none; }
+    .ammo-label { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px; }
+    .ammo-row { display: flex; gap: 10px; align-items: center; }
+    .bullet {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      transition: all 0.3s ease;
+      filter: drop-shadow(0 2px 6px rgba(74,222,128,0.4));
+    }
+    .bullet.spent {
+      opacity: 0.15; filter: none;
+      animation: none; transform: rotate(90deg) scale(0.85);
+    }
+    .bullet.firing { animation: bulletFire 0.45s ease forwards; }
+    @keyframes bulletFire {
+      0%   { transform: scale(1.5) translateY(-5px); filter: drop-shadow(0 0 12px #fff); }
+      40%  { transform: scale(0.5) rotate(45deg); opacity: 0.5; }
+      100% { transform: rotate(90deg) scale(0.85); opacity: 0.15; filter: none; }
+    }
+    .ammo-text { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--muted); margin-left: 6px; }
+
+    /* CROSSHAIR */
+    .crosshair-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+    .crosshair-wrap svg { width: 70px; height: 70px; animation: rotateCross 8s linear infinite; }
+    @keyframes rotateCross { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    .crosshair-wrap svg .inner-ring { animation: pulsering 1.5s ease-in-out infinite; transform-origin: center; }
+    @keyframes pulsering { 0%,100%{r:12;opacity:1} 50%{r:15;opacity:0.5} }
+
+    /* INPUT */
+    .input-group { position: relative; margin-bottom: 14px; }
+    .input-prefix {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-family: 'Share Tech Mono', monospace; font-size: 13px;
+      color: var(--accent); pointer-events: none; letter-spacing: 1px;
+    }
+    #guessInput {
+      width: 100%;
+      padding: 15px 15px 15px 60px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px; letter-spacing: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--text); outline: none;
+      caret-color: var(--accent);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #guessInput:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), inset 0 0 20px rgba(74,222,128,0.04);
+    }
+    #guessInput:disabled { opacity: 0.35; cursor: not-allowed; }
+    #guessInput::-webkit-inner-spin-button,
+    #guessInput::-webkit-outer-spin-button { -webkit-appearance: none; }
+    #guessInput::placeholder { color: var(--muted); font-size: 16px; letter-spacing: 3px; }
+
+    /* RESULT */
+    #result {
+      min-height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px; letter-spacing: 4px; text-align: center;
+      border-radius: 2px; margin-bottom: 14px; transition: all 0.2s ease;
+    }
+    #result.show { animation: resultSlam 0.35s cubic-bezier(0.34,1.4,0.64,1); }
+    @keyframes resultSlam {
+      from { transform: scale(0.7) translateY(10px); opacity:0; }
+      to   { transform: scale(1) translateY(0); opacity:1; }
+    }
+    #result.hit    { color: var(--accent); background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.2); padding:10px; }
+    #result.miss   { color: var(--danger); background: rgba(239,68,68,0.07);  border: 1px solid rgba(239,68,68,0.2);  padding:10px; }
+    #result.higher { color: var(--warn);   background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2); padding:10px; }
+    #result.lower  { color: var(--warn);   background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2); padding:10px; }
+    #result.error  { color: var(--danger); padding:10px; }
+
+    /* PROXIMITY BAR */
+    .proximity-wrap { margin-bottom: 16px; opacity: 0; transition: opacity 0.4s ease; }
+    .proximity-wrap.visible { opacity: 1; }
+    .prox-header {
+      display: flex; justify-content: space-between;
+      font-size: 9px; letter-spacing: 3px; color: var(--text-dim);
+      text-transform: uppercase; margin-bottom: 6px;
+    }
+    .prox-track {
+      height: 8px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 1px;
+      overflow: hidden; position: relative;
+    }
+    .prox-fill {
+      height: 100%; border-radius: 1px;
+      transition: width 0.7s cubic-bezier(0.34,1.2,0.64,1), background 0.7s ease;
+      width: 0%;
+    }
+
+    /* BUTTONS */
+    .btn-fire {
+      width: 100%; padding: 16px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px; letter-spacing: 5px;
+      border: none; border-radius: 2px; cursor: pointer;
+      background: var(--accent); color: #0a0a0a;
+      transition: all 0.15s ease;
+      position: relative; overflow: hidden; margin-bottom: 10px;
+    }
+    .btn-fire::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+    }
+    .btn-fire:hover { background: #6ee7a0; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(74,222,128,0.35); }
+    .btn-fire:active { transform: scale(0.98) translateY(0); }
+    .btn-fire:disabled { background: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-reset {
+      width: 100%; padding: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 15px; letter-spacing: 4px;
+      border: 1px solid var(--border); border-radius: 2px; cursor: pointer;
+      background: transparent; color: var(--muted); transition: all 0.15s ease;
+    }
+    .btn-reset:hover { border-color: var(--text-dim); color: var(--text); background: rgba(255,255,255,0.03); }
+
+    /* STATS FOOTER */
+    .stats-footer {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      border-top: 1px solid var(--border); background: var(--surface2);
+    }
+    .stat-cell {
+      padding: 10px 8px; text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val { font-family: 'Share Tech Mono', monospace; font-size: 16px; color: var(--text); line-height: 1; }
+    .stat-label { font-size: 8px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
+
+    /* PARTICLES */
+    .blast {
+      position: fixed; pointer-events: none;
+      font-size: 18px; z-index: 999;
+      animation: blastFly 1s ease-out forwards;
+    }
+    @keyframes blastFly {
+      0%   { transform: translate(0,0) scale(1) rotate(0deg); opacity:1; }
+      100% { transform: translate(var(--bx),var(--by)) scale(0.1) rotate(var(--br)); opacity:0; }
+    }
+
+    /* UTILS */
+    @keyframes slideDown { from{transform:translateY(-25px);opacity:0} to{transform:translateY(0);opacity:1} }
+    @keyframes fadeUp    { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-8px)} 40%{transform:translateX(8px)}
+      60%{transform:translateX(-5px)} 80%{transform:translateX(5px)}
+    }
+    .shake { animation: shake 0.4s ease; }
+    @keyframes winFlash {
+      0%,100%{border-color:var(--border)}
+      25%,75%{border-color:var(--accent);box-shadow:0 0 30px rgba(74,222,128,0.3)}
+    }
+    .win-flash { animation: winFlash 0.5s ease 4; }
+
+    @media(max-width:480px){
+      .title-block h1{font-size:48px}
+      .stats-footer{grid-template-columns:repeat(2,1fr)}
+      .stat-cell:nth-child(2){border-right:none}
+      .stat-cell:nth-child(3){border-right:1px solid var(--border)}
+    }
+  </style>
 </head>
-
 <body>
-<div class="game-container">
-    <button class="dark-toggle" onclick="toggleDark()">🌙</button>
 
-    <h1>🎯 Guess the Number</h1>
+<canvas id="radar-canvas"></canvas>
 
-    <p>Number between <b>1 – 100</b></p>
-    <p>Attempts Left: <span id="attempts">5</span></p>
-    <p>⏱ Time: <span id="timer">0</span> sec</p>
+<div class="wrapper">
 
-    <input type="number" id="guessInput" placeholder="Enter number">
-    <button onclick="checkGuess()">Guess</button>
-    <button class="reset" onclick="resetGame()">Reset</button>
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="status-dot"></div>
+      <div class="status-text">SYSTEM ONLINE</div>
+    </div>
+    <div class="mission-id" id="missionId">MIS-001</div>
+  </div>
 
-    <p id="message"></p>
-    <p class="score">🏆 Best Score: <span id="bestScore">--</span></p>
+  <div class="title-block">
+    <h1>TARGET <span>LOCK</span></h1>
+    <div class="title-sub">Number Guessing Protocol — Classified</div>
+  </div>
+
+  <div class="panel" id="mainPanel">
+
+    <div class="hud-strip">
+      <div class="hud-cell">
+        <div class="hud-label">Range Min</div>
+        <div class="hud-val">001</div>
+      </div>
+      <div class="hud-divider"></div>
+      <div class="hud-cell">
+        <div class="hud-label">Target</div>
+        <div class="hud-val" style="letter-spacing:4px">???</div>
+      </div>
+      <div class="hud-divider"></div>
+      <div class="hud-cell">
+        <div class="hud-label">Range Max</div>
+        <div class="hud-val">100</div>
+      </div>
+    </div>
+
+    <div style="padding:18px 20px 20px;">
+
+      <!-- Crosshair graphic -->
+      <div class="crosshair-wrap">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#4ade80" stroke-width="1" stroke-dasharray="8 4" opacity="0.4"/>
+          <circle class="inner-ring" cx="50" cy="50" r="12" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.8"/>
+          <line x1="50" y1="2"  x2="50" y2="30" stroke="#4ade80" stroke-width="1.5" opacity="0.9"/>
+          <line x1="50" y1="70" x2="50" y2="98" stroke="#4ade80" stroke-width="1.5" opacity="0.9"/>
+          <line x1="2"  y1="50" x2="30" y2="50" stroke="#4ade80" stroke-width="1.5" opacity="0.9"/>
+          <line x1="70" y1="50" x2="98" y2="50" stroke="#4ade80" stroke-width="1.5" opacity="0.9"/>
+          <circle cx="50" cy="50" r="3" fill="#4ade80"/>
+          <line x1="50" y1="35" x2="50" y2="40" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
+          <line x1="50" y1="60" x2="50" y2="65" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
+          <line x1="35" y1="50" x2="40" y2="50" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
+          <line x1="60" y1="50" x2="65" y2="50" stroke="#4ade80" stroke-width="1" opacity="0.5"/>
+          <path d="M 10 20 L 10 10 L 20 10" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.5"/>
+          <path d="M 80 10 L 90 10 L 90 20" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.5"/>
+          <path d="M 10 80 L 10 90 L 20 90" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.5"/>
+          <path d="M 80 90 L 90 90 L 90 80" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.5"/>
+        </svg>
+      </div>
+
+      <!-- Ammo row — bullets instead of hearts -->
+      <div class="ammo-section">
+        <div class="ammo-label">Ammunition Remaining</div>
+        <div class="ammo-row" id="ammoRow">
+          <div class="bullet">🔫</div>
+          <div class="bullet">🔫</div>
+          <div class="bullet">🔫</div>
+          <div class="bullet">🔫</div>
+          <div class="bullet">🔫</div>
+          <div class="ammo-text" id="ammoText">5 / 5</div>
+        </div>
+      </div>
+
+      <!-- Proximity sensor -->
+      <div class="proximity-wrap" id="proxWrap">
+        <div class="prox-header">
+          <span>◀ Ice Cold</span>
+          <span>Proximity Sensor</span>
+          <span>Scorching ▶</span>
+        </div>
+        <div class="prox-track">
+          <div class="prox-fill" id="proxFill"></div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="input-group">
+        <div class="input-prefix">TGT ›</div>
+        <input
+          type="number" id="guessInput"
+          placeholder="ENTER CODE"
+          min="1" max="100"
+          inputmode="numeric" autocomplete="off"
+        />
+      </div>
+
+      <div id="result"></div>
+
+      <button class="btn-fire" id="guessBtn">⚡ FIRE SHOT</button>
+      <button class="btn-reset" id="restartBtn">↺ NEW MISSION</button>
+    </div>
+
+    <div class="stats-footer">
+      <div class="stat-cell"><div class="stat-val" id="statShots">0</div><div class="stat-label">Shots</div></div>
+      <div class="stat-cell"><div class="stat-val" id="statAmmo">5</div><div class="stat-label">Ammo Left</div></div>
+      <div class="stat-cell"><div class="stat-val" id="statWins">0</div><div class="stat-label">Wins</div></div>
+      <div class="stat-cell"><div class="stat-val" id="statMissions">1</div><div class="stat-label">Missions</div></div>
+    </div>
+  </div>
 </div>
 
-<audio id="winSound" src="sounds/win.mp3"></audio>
-<audio id="loseSound" src="sounds/lose.mp3"></audio>
-<audio id="clickSound" src="sounds/click.mp3"></audio>
+<script>
+/* RADAR */
+(function(){
+  const c = document.getElementById('radar-canvas');
+  const cx = c.getContext('2d');
+  c.width = 380; c.height = 380;
+  let angle = 0;
+  function draw(){
+    cx.clearRect(0,0,380,380);
+    const ox=190,oy=190;
+    [40,80,120,160,190].forEach(r=>{
+      cx.beginPath(); cx.arc(ox,oy,r,0,Math.PI*2);
+      cx.strokeStyle='rgba(74,222,128,0.4)'; cx.lineWidth=0.8; cx.stroke();
+    });
+    cx.strokeStyle='rgba(74,222,128,0.3)'; cx.lineWidth=0.8;
+    cx.beginPath(); cx.moveTo(ox,0); cx.lineTo(ox,380); cx.stroke();
+    cx.beginPath(); cx.moveTo(0,oy); cx.lineTo(380,oy); cx.stroke();
+    cx.save(); cx.translate(ox,oy); cx.rotate(angle);
+    const g=cx.createLinearGradient(0,-190,0,0);
+    g.addColorStop(0,'rgba(74,222,128,0)');
+    g.addColorStop(1,'rgba(74,222,128,0.25)');
+    cx.beginPath(); cx.moveTo(0,0); cx.arc(0,0,190,-Math.PI/2,-Math.PI/2+1.0);
+    cx.fillStyle=g; cx.fill(); cx.restore();
+    angle+=0.015; requestAnimationFrame(draw);
+  }
+  draw();
+})();
 
-<script src="script.js"></script>
+/* GAME */
+let secret=rand(), shots=0, ammoLeft=5, wins=0, missions=1;
+function rand(){ return Math.floor(Math.random()*100)+1; }
+
+const input     = document.getElementById('guessInput');
+const resultEl  = document.getElementById('result');
+const guessBtn  = document.getElementById('guessBtn');
+const restartBtn= document.getElementById('restartBtn');
+const ammoRow   = document.getElementById('ammoRow');
+const ammoText  = document.getElementById('ammoText');
+const proxWrap  = document.getElementById('proxWrap');
+const proxFill  = document.getElementById('proxFill');
+const panel     = document.getElementById('mainPanel');
+const missionId = document.getElementById('missionId');
+const statShots    = document.getElementById('statShots');
+const statAmmo     = document.getElementById('statAmmo');
+const statWins     = document.getElementById('statWins');
+const statMissions = document.getElementById('statMissions');
+
+function getBullets(){ return ammoRow.querySelectorAll('.bullet'); }
+
+function updateProximity(guess){
+  const diff=Math.abs(guess-secret);
+  const hot=Math.max(0,100-diff*2);
+  proxWrap.classList.add('visible');
+  proxFill.style.width=hot+'%';
+  if(hot>70){ proxFill.style.background='linear-gradient(90deg,#f59e0b,#ef4444)'; proxFill.style.boxShadow='0 0 8px rgba(239,68,68,0.5)'; }
+  else if(hot>35){ proxFill.style.background='linear-gradient(90deg,#22c55e,#f59e0b)'; proxFill.style.boxShadow=''; }
+  else{ proxFill.style.background='linear-gradient(90deg,#3b82f6,#22c55e)'; proxFill.style.boxShadow=''; }
+}
+
+function spendBullet(){
+  const active=Array.from(getBullets()).filter(b=>!b.classList.contains('spent'));
+  if(!active.length) return;
+  const last=active[active.length-1];
+  last.classList.add('firing');
+  setTimeout(()=>last.classList.add('spent'),450);
+}
+
+function setResult(text,cls){
+  resultEl.textContent=text;
+  resultEl.className='show '+cls;
+}
+
+function blast(type){
+  const icons=type==='win'?['💥','🎯','⭐','🔥','💫','✅','🏆']:['💥','☠️','🔴','⚡','🚨'];
+  const cx=window.innerWidth/2, cy=window.innerHeight/2;
+  for(let i=0;i<18;i++){
+    const el=document.createElement('div');
+    el.className='blast';
+    el.textContent=icons[i%icons.length];
+    const a=(i/18)*Math.PI*2, d=100+Math.random()*180;
+    el.style.left=cx+'px'; el.style.top=cy+'px';
+    el.style.setProperty('--bx',(Math.cos(a)*d)+'px');
+    el.style.setProperty('--by',(Math.sin(a)*d)+'px');
+    el.style.setProperty('--br',(Math.random()*720-360)+'deg');
+    el.style.animationDelay=(Math.random()*0.2)+'s';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1200);
+  }
+}
+
+function updateStats(){
+  statShots.textContent=shots;
+  statAmmo.textContent=ammoLeft;
+  statWins.textContent=wins;
+  statMissions.textContent=missions;
+  if(ammoLeft<=1) statAmmo.style.color='var(--danger)';
+  else if(ammoLeft<=2) statAmmo.style.color='var(--warn)';
+  else statAmmo.style.color='';
+}
+
+function checkGuess(){
+  const val=Number(input.value);
+  if(!val||val<1||val>100||!Number.isInteger(val)){
+    setResult('▸ INVALID COORDINATE — Enter 1 to 100','error');
+    panel.classList.add('shake');
+    setTimeout(()=>panel.classList.remove('shake'),400);
+    input.value=''; return;
+  }
+  shots++; ammoLeft--;
+  updateProximity(val); spendBullet();
+  ammoText.textContent=`${ammoLeft} / 5`;
+  updateStats();
+
+  if(val===secret){
+    setResult('🎯  TARGET CONFIRMED — MISSION COMPLETE!','hit');
+    panel.classList.add('win-flash');
+    blast('win'); wins++;
+    disableGame();
+    guessBtn.textContent='🏆 MISSION COMPLETE';
+    updateStats();
+  } else if(ammoLeft===0){
+    setResult(`☠️  AMMO DEPLETED — TARGET WAS ${secret}`,'miss');
+    blast('lose'); disableGame();
+    guessBtn.textContent='☠️ MISSION FAILED';
+  } else if(val>secret){
+    setResult('⬆  OVERSHOT — Adjust aim lower','higher');
+  } else {
+    setResult('⬇  UNDERSHOT — Aim higher','lower');
+  }
+  input.value=''; input.focus();
+}
+
+function disableGame(){ input.disabled=true; guessBtn.disabled=true; }
+
+function restartGame(){
+  secret=rand(); shots=0; ammoLeft=5; missions++;
+  getBullets().forEach(b=>b.classList.remove('spent','firing'));
+  ammoText.textContent='5 / 5';
+  proxWrap.classList.remove('visible');
+  proxFill.style.width='0%';
+  resultEl.textContent=''; resultEl.className='';
+  panel.classList.remove('win-flash');
+  guessBtn.textContent='⚡ FIRE SHOT';
+  input.disabled=false; guessBtn.disabled=false;
+  input.value=''; input.focus();
+  missionId.textContent='MIS-'+String(missions).padStart(3,'0');
+  updateStats();
+}
+
+guessBtn.addEventListener('click',checkGuess);
+restartBtn.addEventListener('click',restartGame);
+input.addEventListener('keydown',e=>{ if(e.key==='Enter') checkGuess(); });
+updateStats();
+</script>
 </body>
 </html>
