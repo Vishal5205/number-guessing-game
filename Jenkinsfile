@@ -5,7 +5,7 @@ pipeline {
 
   stage('Clone') {
    steps {
-    git 'https://github.com/Vishal5205/number-guessing-game.git'
+    git branch: 'main', url: 'https://github.com/Vishal5205/number-guessing-game.git'
    }
   }
 
@@ -22,5 +22,4 @@ pipeline {
   }
 
  }
-
 }
