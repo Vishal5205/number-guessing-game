@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guessing-game
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guessing-game
+  template:
+    metadata:
+      labels:
+        app: guessing-game
+    spec:
+      containers:
+      - name: guessing-game
+        image: vishal1326/guessing-game:latest
+        ports:
+        - containerPort: 80
