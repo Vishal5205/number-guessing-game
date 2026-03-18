@@ -7,12 +7,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/Vishal5205/number-guessing-game.git'
-            }
-        }
-
         stage('Docker Build') {
             steps {
                 sh '''
