@@ -9,17 +9,17 @@ pipeline {
 
         stage('SonarCloud Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) 
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     script {
                         def scannerHome = tool 'sonar-scanner'
-                        sh '''
-                        sonar-scanner \
+                        sh """
+                        ${scannerHome}/bin/sonar-scanner \
                         -Dsonar.projectKey=Vishal5205_number-guessing-game \
                         -Dsonar.organization=vishal5205 \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=https://sonarcloud.io \
                         -Dsonar.login=$SONAR_TOKEN
-                        '''
+                        """
                     }
                 }
             }
