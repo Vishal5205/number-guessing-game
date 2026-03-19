@@ -1,4 +1,4 @@
-#  Deep Space — Number Guessing Game | Full Cloud DevOps Pipeline
+# 🚀 Deep Space — Number Guessing Game | Full Cloud DevOps Pipeline
 
 > A complete end-to-end **CI/CD + GitOps + Monitoring** project built on AWS EC2, Jenkins, Docker, Kubernetes (K3s), ArgoCD, Prometheus, and Grafana.
 
@@ -11,7 +11,7 @@
 
 ---
 
-##  Table of Contents
+## 📋 Table of Contents
 
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
@@ -28,7 +28,7 @@
 
 ---
 
-##  Project Overview
+## 🎯 Project Overview
 
 This project demonstrates a **production-grade DevOps pipeline** for a containerized web application called **Deep Space — Coordinate Lock Protocol**, a space-themed number guessing game (v2.4.1).
 
@@ -42,7 +42,7 @@ The pipeline covers the complete software delivery lifecycle:
 
 ---
 
-##  Architecture
+## 🏗️ Architecture
 
 ```
 Developer
@@ -73,9 +73,11 @@ GitHub (main branch)
              └── Prometheus              ──► NodePort ✦ 32443  (Metrics)
 ```
 
+![CI/CD Pipeline Architecture](screenshots/pipeline-diagram.png)
+
 ---
 
-##  Tech Stack
+## 🛠️ Tech Stack
 
 | Category | Tool | Version |
 |---|---|---|
@@ -96,7 +98,7 @@ GitHub (main branch)
 
 ---
 
-##  Infrastructure — AWS EC2
+## 🖥️ Infrastructure — AWS EC2
 
 Two dedicated EC2 instances — both `c7i.flex.large`, `us-east-1b`, **3/3 status checks passed** ✅
 
@@ -109,7 +111,7 @@ Two dedicated EC2 instances — both `c7i.flex.large`, `us-east-1b`, **3/3 statu
 
 ---
 
-##  CI Pipeline — Jenkins
+## ⚙️ CI Pipeline — Jenkins
 
 Jenkins `2.541.3` runs on **CI-JENKINS-SERVER** at `54.163.20.147:8080`.
 
@@ -141,7 +143,7 @@ sudo systemctl restart jenkins
 
 ![Jenkins — Plugins](screenshots/Screenshot_2026-03-18_at_9.58.35_PM.png)
 
-### Pipeline Stages — Build #3  (44 sec total)
+### Pipeline Stages — Build #3 ✅ (44 sec total)
 
 ```
 Start → Checkout SCM (0.25s) → SonarCloud Analysis (33s) → Docker Build (1s) → Docker Push (5s) → End
@@ -151,7 +153,7 @@ Start → Checkout SCM (0.25s) → SonarCloud Analysis (33s) → Docker Build (1
 - Branch: `refs/remotes/origin/main`
 - Triggered by: **Devops**
 
-![Jenkins — All 4 Stages Passed ](screenshots/Screenshot_2026-03-18_at_10.19.38_PM.png)
+![Jenkins — All 4 Stages Passed ✅](screenshots/Screenshot_2026-03-18_at_10.19.38_PM.png)
 
 ![Jenkins — Finished: SUCCESS](screenshots/Screenshot_2026-03-18_at_10.23.28_PM.png)
 
@@ -207,8 +209,8 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 | Field | Value |
 |---|---|
-| App Health |  **Healthy** |
-| Sync Status |  **Synced** to `main (47f3258)` |
+| App Health | ✅ **Healthy** |
+| Sync Status | ✅ **Synced** to `main (47f3258)` |
 | Auto-Sync | **Enabled** |
 | Last Sync | Wed Mar 18 2026, 22:43:35 GMT+0530 |
 | Commit | `Create service.yaml` |
@@ -309,7 +311,7 @@ All **13 scraped targets** returning `up = 1` ✅
 
 ---
 
-##  AWS Security Group Rules
+## 🔐 AWS Security Group Rules
 
 Security Group: `sg-0196aa0e7398713e5` (`launch-wizard-7`) — **6 inbound rules**:
 
@@ -326,7 +328,7 @@ Security Group: `sg-0196aa0e7398713e5` (`launch-wizard-7`) — **6 inbound rules
 
 ---
 
-##  Application
+## 🎮 Application
 
 **Deep Space — Coordinate Lock Protocol** (`v2.4.1`)
 
@@ -353,7 +355,7 @@ number-guessing-game/
 
 ---
 
-##  How to Reproduce
+## 🔁 How to Reproduce
 
 ### 1. Launch EC2 Instances
 - 2x `c7i.flex.large`, Ubuntu 24.04, `us-east-1b`
@@ -404,7 +406,7 @@ kubectl patch svc monitoring-kube-prometheus-prometheus -n monitoring \
 
 ---
 
-##  Author
+## 👤 Author
 
 **Vishal S** — Cloud DevOps Engineer  
 GitHub: [@Vishal5205](https://github.com/Vishal5205) | [number-guessing-game repo](https://github.com/Vishal5205/number-guessing-game)  
