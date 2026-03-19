@@ -16,7 +16,7 @@
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
 3. [Tech Stack](#tech-stack)
-4. [Infrastructure](#infrastructure)
+4. [Infrastructure — AWS EC2](#infrastructure--aws-ec2)
 5. [CI Pipeline — Jenkins](#ci-pipeline--jenkins)
 6. [CD Pipeline — ArgoCD + Kubernetes](#cd-pipeline--argocd--kubernetes)
 7. [Monitoring — Prometheus + Grafana](#monitoring--prometheus--grafana)
@@ -52,10 +52,10 @@ GitHub (main branch)
     │
     ├──► Jenkins CI Pipeline (CI-JENKINS-SERVER)
     │        │
-    │        ├── 1. Checkout SCM      (0.25s)
-    │        ├── 2. SonarCloud Analysis (33s)
-    │        ├── 3. Docker Build       (1s)
-    │        └── 4. Docker Push        (5s)
+    │        ├── 1. Checkout SCM        (0.25s)
+    │        ├── 2. SonarCloud Analysis  (33s)
+    │        ├── 3. Docker Build          (1s)
+    │        └── 4. Docker Push           (5s)
     │                │
     │                ▼
     │         DockerHub Registry
@@ -67,10 +67,10 @@ GitHub (main branch)
         K3s Kubernetes (CD-KUBERNETES-SERVER)
              │
              ├── Deployment: guessing-game
-             ├── Service: guessing-game (NodePort 30007) ◄── App
-             ├── ArgoCD Server        (NodePort 32729) ◄── GitOps UI
-             ├── Grafana              (NodePort 30332) ◄── Dashboards
-             └── Prometheus           (NodePort 32443) ◄── Metrics
+             ├── Service: guessing-game  ──► NodePort ✦ 30007  (App)
+             ├── ArgoCD Server           ──► NodePort ✦ 32729  (GitOps UI)
+             ├── Grafana                 ──► NodePort ✦ 30332  (Dashboards)
+             └── Prometheus              ──► NodePort ✦ 32443  (Metrics)
 ```
 
 ---
@@ -96,54 +96,64 @@ GitHub (main branch)
 
 ---
 
-## 🖥️ Infrastructure
+## 🖥️ Infrastructure — AWS EC2
 
-### AWS EC2 Instances
+Two dedicated EC2 instances — both `c7i.flex.large`, `us-east-1b`, **3/3 status checks passed** ✅
 
-Two dedicated EC2 instances — both `c7i.flex.large`, `us-east-1b`, running simultaneously:
-
-| Instance Name | Instance ID | Role | IP |
+| Instance Name | Instance ID | Role | Public IP |
 |---|---|---|---|
 | **CI-JENKINS-SERVER** | i-0adbbf5fae0771b4e | Jenkins CI | 54.163.20.147 |
 | **CD-KUBERNETES-SERVER** | i-0ce5af51b511204d2 | K3s + ArgoCD + Monitoring | 18.206.245.80 |
 
-Both instances pass **3/3 status checks** ✅
+![AWS EC2 — Both Instances Running](screenshots/Screenshot_2026-03-18_at_11_34_26_PM.png)
 
 ---
 
 ## ⚙️ CI Pipeline — Jenkins
 
-Jenkins `2.541.3` runs on the **CI-JENKINS-SERVER** at `54.163.20.147:8080`.
+Jenkins `2.541.3` runs on **CI-JENKINS-SERVER** at `54.163.20.147:8080`.
 
-### Jenkins Credentials Configured
+### Jenkins Setup
 
-| Credential ID | Type | Purpose |
-|---|---|---|
-| `dockerhub-creds` | Username/Password | Push image to DockerHub |
-| `github-creds` | Username/Password | Checkout source code |
-| `sonar-token` | Secret Text | SonarCloud code analysis |
+```bash
+sudo apt update
+sudo apt install fontconfig openjdk-21-jre -y
+sudo apt install jenkins -y
+sudo apt install docker.io -y
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
+```
 
-### Jenkins Plugins Installed
+### Credentials Configured
+
+| Credential ID | Purpose |
+|---|---|
+| `dockerhub-creds` | Push image to DockerHub |
+| `github-creds` | Checkout source from GitHub |
+| `sonar-token` | SonarCloud code quality analysis |
+
+### Plugins Installed
 
 - **Docker Pipeline** `634.vedc7242b_eda_7`
 - **SonarQube Scanner** `2.18.2`
 
-### Pipeline Stages (Build #3 — 44 sec total)
+### Pipeline Stages — Build #3 ✅ (44 sec total)
 
 ```
 Start → Checkout SCM (0.25s) → SonarCloud Analysis (33s) → Docker Build (1s) → Docker Push (5s) → End
 ```
 
-All stages pass ✅ — **Finished: SUCCESS**
-
 - Git Revision: `47f32583c6160e91c19a898b3c938c01d5b88b4c`
-- Repository: `https://github.com/Vishal5205/number-guessing-game`
 - Branch: `refs/remotes/origin/main`
-- Pipeline triggered by user: **Devops**
+- Triggered by: **Devops**
 
-### DockerHub Image
+![Jenkins — All 4 Stages Passed ✅](screenshots/Screenshot_2026-03-18_at_10_19_38_PM.png)
 
-`vishal1326/guessing-game` — 4 tags pushed, 91 total pulls:
+![Jenkins — Finished: SUCCESS](screenshots/Screenshot_2026-03-18_at_10_23_28_PM.png)
+
+### DockerHub — Image Published
+
+`vishal1326/guessing-game` — **4 tags**, **91 pulls**
 
 | Tag | Pushed |
 |---|---|
@@ -152,11 +162,13 @@ All stages pass ✅ — **Finished: SUCCESS**
 | `7` | ~2 hours ago |
 | `10` | ~8 hours ago |
 
+![DockerHub — guessing-game repository with 4 tags](screenshots/Screenshot_2026-03-18_at_10_20_13_PM.png)
+
 ---
 
 ## 🔄 CD Pipeline — ArgoCD + Kubernetes
 
-### K3s Setup on CD-KUBERNETES-SERVER
+### K3s Setup
 
 ```bash
 # Install K3s
@@ -171,27 +183,18 @@ kubectl get nodes
 # cdkubernetiesserver   Ready    control-plane   v1.34.5+k3s1
 ```
 
-### Initial Deployment
+### ArgoCD Install
 
 ```bash
-# Deploy application
-kubectl create deployment guessing-game --image=vishal1326/guessing-game:latest
-
-# Expose as NodePort
-kubectl expose deployment guessing-game --type=NodePort --port=80
-```
-
-### ArgoCD Setup
-
-```bash
-# Install ArgoCD
 kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-# Expose ArgoCD server
-kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+# Patch to NodePort ✦ 32729
+kubectl patch svc argocd-server -n argocd \
+  -p '{"spec": {"type": "NodePort"}}'
 
-# Get initial admin password
+# Get admin password
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d
 ```
@@ -204,66 +207,69 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 | Sync Status | ✅ **Synced** to `main (47f3258)` |
 | Auto-Sync | **Enabled** |
 | Last Sync | Wed Mar 18 2026, 22:43:35 GMT+0530 |
-| Commit Author | Vishal S |
-| Commit Message | Create service.yaml |
+| Commit | `Create service.yaml` |
 
 **Resource Tree:** `guessing-game (app)` → `svc + deployment` → `ReplicaSets` → `Pod (1/1 Running)`
+
+![ArgoCD — App Healthy & Synced to main](screenshots/Screenshot_2026-03-18_at_10_46_15_PM.png)
 
 ---
 
 ## 📊 Monitoring — Prometheus + Grafana
 
-### Installation via Helm
+### Install via Helm
 
 ```bash
 # Install Helm
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
 # Add Prometheus community chart
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add prometheus-community \
+  https://prometheus-community.github.io/helm-charts
 helm repo update
 
 # Install kube-prometheus-stack
 kubectl create namespace monitoring
 helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring
-```
 
-### Expose Services
+# Expose Grafana ──► NodePort ✦ 30332
+kubectl patch svc monitoring-grafana -n monitoring \
+  -p '{"spec": {"type": "NodePort"}}'
 
-```bash
-# Expose Grafana
-kubectl patch svc monitoring-grafana -n monitoring -p '{"spec": {"type": "NodePort"}}'
-
-# Expose Prometheus
+# Expose Prometheus ──► NodePort ✦ 32443
 kubectl patch svc monitoring-kube-prometheus-prometheus -n monitoring \
   -p '{"spec": {"type": "NodePort"}}'
 
-# Retrieve Grafana admin password
+# Get Grafana admin password
 kubectl get secret --namespace monitoring monitoring-grafana \
   -o jsonpath="{.data.admin-password}" | base64 --decode
 ```
 
-### Prometheus Targets (`up` query — 13 series, all = 1 ✅)
+### Prometheus — All Targets Healthy
 
-All 13 scraped targets are healthy, including:
+All **13 scraped targets** returning `up = 1` ✅ including:
 - `kubelet` (cadvisor + probes + metrics)
 - `kube-state-metrics`
-- `coredns`
-- `grafana`
-- `node-exporter` (9100)
-- `kube-prometheus-operator`
-- `prometheus` (9090)
-- `alertmanager` (9093)
+- `node-exporter` (port 9100)
+- `grafana`, `prometheus`, `alertmanager`, `coredns`
 
-### Grafana Dashboard
+![Prometheus — up query, all 13 targets = 1](screenshots/Screenshot_2026-03-18_at_11_25_56_PM.png)
+
+![Prometheus — kube_pod_info, 21 pod result series](screenshots/Screenshot_2026-03-18_at_11_26_38_PM.png)
+
+![Prometheus — container_cpu_usage_seconds_total graph (30m)](screenshots/Screenshot_2026-03-18_at_11_31_27_PM.png)
+
+### Grafana — CPU Usage Dashboard
 
 - **Dashboard:** Kubernetes / Compute Resources / Pod
 - **Namespace:** `default`
 - **Pod:** `guessing-game-84f4d8c486-l8vsv`
-- **Metric:** CPU Usage (`node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m`)
-- **Data source:** prometheus-1
-- **Grafana Version:** v12.4.1 (46a02dc12a)
+- **Metric:** `node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m`
+- **Data Source:** `prometheus-1`
+- **Grafana Version:** v12.4.1
+
+![Grafana — CPU Usage for guessing-game pod](screenshots/Screenshot_2026-03-18_at_11_17_02_PM.png)
 
 ---
 
@@ -273,28 +279,28 @@ All 13 scraped targets are healthy, including:
 
 | Service | Type | Cluster-IP | NodePort | Purpose |
 |---|---|---|---|---|
-| `guessing-game` | **NodePort** | 10.43.32.59 | **`► 30007`** | 🎮 **App — Public Access** |
+| `guessing-game` | **NodePort** | 10.43.32.59 | **✦ 30007** | 🎮 App — Public Access |
 | `kubernetes` | ClusterIP | 10.43.0.1 | 443 | Internal API |
 
 ### `argocd` Namespace
 
 | Service | Type | Cluster-IP | Port(s) | NodePort |
 |---|---|---|---|---|
-| `argocd-server` | **NodePort** | 10.43.78.31 | 80, 443 | **`► 32729`** |
+| `argocd-server` | **NodePort** | 10.43.78.31 | 80, 443 | **✦ 32729** |
 | `argocd-applicationset-controller` | ClusterIP | 10.43.110.217 | 7000, 8080 | — |
-| `argocd-dex-server` | ClusterIP | 10.43.50.118 | 5556, 5557, 5558 | — |
+| `argocd-dex-server` | ClusterIP | 10.43.50.118 | 5556–5558 | — |
 | `argocd-metrics` | ClusterIP | 10.43.163.155 | 8082 | — |
-| `argocd-notifications-controller-metrics` | ClusterIP | 10.43.35.249 | 9001 | — |
 | `argocd-redis` | ClusterIP | 10.43.163.99 | 6379 | — |
 | `argocd-repo-server` | ClusterIP | 10.43.28.40 | 8081, 8084 | — |
+| `argocd-notifications-controller-metrics` | ClusterIP | 10.43.35.249 | 9001 | — |
 | `argocd-server-metrics` | ClusterIP | 10.43.18.149 | 8083 | — |
 
 ### `monitoring` Namespace
 
 | Service | Type | Cluster-IP | Port(s) | NodePort |
 |---|---|---|---|---|
-| `monitoring-grafana` | **NodePort** | 10.43.133.51 | 80 | **`► 30332`** |
-| `monitoring-kube-prometheus-prometheus` | **NodePort** | 10.43.184.130 | 9090, 8080 | **`► 32443`** |
+| `monitoring-grafana` | **NodePort** | 10.43.133.51 | 80 | **✦ 30332** |
+| `monitoring-kube-prometheus-prometheus` | **NodePort** | 10.43.184.130 | 9090, 8080 | **✦ 32443** |
 | `monitoring-kube-prometheus-alertmanager` | ClusterIP | 10.43.187.166 | 9093, 8080 | — |
 | `monitoring-kube-prometheus-operator` | ClusterIP | 10.43.77.199 | 443 | — |
 | `monitoring-kube-state-metrics` | ClusterIP | 10.43.184.56 | 8080 | — |
@@ -306,18 +312,20 @@ All 13 scraped targets are healthy, including:
 
 ## 🔐 AWS Security Group Rules
 
-Security Group: `sg-0196aa0e7398713e5` (`launch-wizard-7`) — Final state with **6 inbound rules**:
+Security Group: `sg-0196aa0e7398713e5` (`launch-wizard-7`) — **6 inbound rules**:
 
-| Port | Protocol | Purpose | Access |
-|---|---|---|---|
-| **`22`** | SSH | Remote access to EC2 instances | 0.0.0.0/0 |
-| **`30007`** | Custom TCP | 🎮 **Guessing Game App** (NodePort) | 0.0.0.0/0 |
-| **`30332`** | Custom TCP | 📊 **Grafana Dashboard** (NodePort) | 0.0.0.0/0 |
-| **`31260`** | Custom TCP | Jenkins/App initial NodePort | 0.0.0.0/0 |
-| **`32443`** | Custom TCP | 🔍 **Prometheus** (NodePort) | 0.0.0.0/0 |
-| **`32729`** | Custom TCP | 🔄 **ArgoCD UI** (NodePort) | 0.0.0.0/0 |
+| Port | Protocol | Purpose |
+|---|---|---|
+| `22` | SSH | EC2 remote access |
+| **`30007`** | Custom TCP | 🎮 **Guessing Game App** |
+| **`30332`** | Custom TCP | 📊 **Grafana Dashboard** |
+| `31260` | Custom TCP | Initial app NodePort |
+| **`32443`** | Custom TCP | 🔍 **Prometheus** |
+| **`32729`** | Custom TCP | 🔄 **ArgoCD UI** |
 
-> **Note:** Ports were opened incrementally as each service was set up — the security group evolved from 2 rules (SSH + app) to the final 6 rules covering the full monitoring + GitOps stack.
+![AWS Security Group — 6 Inbound Rules (Final State)](screenshots/Screenshot_2026-03-18_at_11_09_55_PM.png)
+
+> Ports were opened incrementally as each service was deployed — evolving from 2 rules (SSH + app) to the full 6-rule stack.
 
 ---
 
@@ -325,11 +333,11 @@ Security Group: `sg-0196aa0e7398713e5` (`launch-wizard-7`) — Final state with 
 
 **Deep Space — Coordinate Lock Protocol** (`v2.4.1`)
 
-A space-themed number guessing game served via Kubernetes:
-
 - **URL:** `http://18.206.245.80:30007`
-- **Gameplay:** Guess the target coordinate between MIN (001) and MAX (100) within 5 reactor cores (attempts)
+- **Gameplay:** Guess the secret coordinate between 001–100 in 5 reactor core attempts
 - **Status:** `TRANSMISSION LIVE` ✅
+
+![Deep Space App — Live on NodePort 30007](screenshots/Screenshot_2026-03-18_at_11_10_03_PM.png)
 
 ---
 
@@ -337,85 +345,87 @@ A space-themed number guessing game served via Kubernetes:
 
 ```
 number-guessing-game/
-├── index.html          # Game frontend
-├── Dockerfile          # Container definition
-├── Jenkinsfile         # CI pipeline (Checkout → Sonar → Build → Push)
-├── deployment.yaml     # Kubernetes Deployment manifest
-└── service.yaml        # Kubernetes Service manifest (NodePort 30007)
+├── index.html           # Game frontend (Deep Space UI)
+├── Dockerfile           # Container definition
+├── Jenkinsfile          # CI pipeline (Checkout → Sonar → Build → Push)
+├── deployment.yaml      # Kubernetes Deployment manifest
+├── service.yaml         # Kubernetes Service (NodePort 30007)
+└── screenshots/         # ← Commit all .png screenshots here
+    ├── Screenshot_2026-03-18_at_11_34_26_PM.png   # EC2 instances
+    ├── Screenshot_2026-03-18_at_10_19_38_PM.png   # Jenkins stages
+    ├── Screenshot_2026-03-18_at_10_23_28_PM.png   # Jenkins SUCCESS
+    ├── Screenshot_2026-03-18_at_10_20_13_PM.png   # DockerHub
+    ├── Screenshot_2026-03-18_at_10_46_15_PM.png   # ArgoCD synced
+    ├── Screenshot_2026-03-18_at_11_25_56_PM.png   # Prometheus up
+    ├── Screenshot_2026-03-18_at_11_26_38_PM.png   # kube_pod_info
+    ├── Screenshot_2026-03-18_at_11_31_27_PM.png   # CPU graph
+    ├── Screenshot_2026-03-18_at_11_17_02_PM.png   # Grafana dashboard
+    ├── Screenshot_2026-03-18_at_11_09_55_PM.png   # Security group
+    └── Screenshot_2026-03-18_at_11_10_03_PM.png   # App running
 ```
+
+> **To activate all screenshots:** create a `screenshots/` folder in your repo root and commit the `.png` files listed above with the **exact same filenames**.
 
 ---
 
 ## 🔁 How to Reproduce
 
 ### 1. Launch EC2 Instances
-
 - 2x `c7i.flex.large`, Ubuntu 24.04, `us-east-1b`
-- Assign security group with ports: `22, 8080, 30007, 30332, 31260, 32443, 32729`
+- Security group ports: `22, 8080, 30007, 30332, 31260, 32443, 32729`
 
 ### 2. Set Up Jenkins (CI Server)
-
 ```bash
-sudo apt update
-sudo apt install fontconfig openjdk-21-jre -y
-# Install Jenkins (via apt)
-sudo apt install jenkins -y
-sudo systemctl start jenkins
-# Install Docker
-sudo apt install docker.io -y
+sudo apt update && sudo apt install fontconfig openjdk-21-jre jenkins docker.io -y
 sudo usermod -aG docker jenkins
 sudo systemctl restart jenkins
 ```
-
-### 3. Configure Jenkins
-
 - Install plugins: **Docker Pipeline**, **SonarQube Scanner**
 - Add credentials: `dockerhub-creds`, `github-creds`, `sonar-token`
-- Configure SonarQube Scanner tool (`sonar-token`, version `8.0.1.6346`)
-- Create pipeline job pointing to GitHub repo
+- Create pipeline job pointing to this GitHub repo
 
-### 4. Set Up K3s (CD Server)
-
+### 3. Set Up K3s (CD Server)
 ```bash
 curl -sfL https://get.k3s.io | sh -
 sudo chmod 644 /etc/rancher/k3s/k3s.yaml
 ```
 
-### 5. Install ArgoCD
-
+### 4. Install ArgoCD
 ```bash
 kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
 ```
 
-### 6. Install Monitoring Stack
-
+### 5. Install Monitoring Stack
 ```bash
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add prometheus-community \
+  https://prometheus-community.github.io/helm-charts
 helm repo update
 kubectl create namespace monitoring
-helm install monitoring prometheus-community/kube-prometheus-stack --namespace monitoring
-kubectl patch svc monitoring-grafana -n monitoring -p '{"spec": {"type": "NodePort"}}'
-kubectl patch svc monitoring-kube-prometheus-prometheus -n monitoring -p '{"spec": {"type": "NodePort"}}'
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring
+kubectl patch svc monitoring-grafana -n monitoring \
+  -p '{"spec": {"type": "NodePort"}}'
+kubectl patch svc monitoring-kube-prometheus-prometheus -n monitoring \
+  -p '{"spec": {"type": "NodePort"}}'
 ```
 
-### 7. Connect ArgoCD to GitHub Repo
-
-- Open ArgoCD UI at `http://<CD-SERVER-IP>:32729`
-- Create app pointing to `https://github.com/Vishal5205/number-guessing-game`
-- Enable **Auto-Sync**
-- ArgoCD will deploy and keep the app in sync with `main` branch
+### 6. Connect ArgoCD to Repo
+- Open `http://18.206.245.80:32729`
+- Create app → repo: `https://github.com/Vishal5205/number-guessing-game`
+- Enable **Auto-Sync** → ArgoCD keeps cluster in sync with `main`
 
 ---
 
 ## 👤 Author
 
 **Vishal S** — Cloud DevOps Engineer  
-GitHub: [@Vishal5205](https://github.com/Vishal5205)  
+GitHub: [@Vishal5205](https://github.com/Vishal5205) | [number-guessing-game repo](https://github.com/Vishal5205/number-guessing-game)  
 DockerHub: [vishal1326](https://hub.docker.com/u/vishal1326)
 
 ---
 
-*Built on AWS EC2 | Jenkins | Docker | Kubernetes (K3s) | ArgoCD | Prometheus | Grafana | SonarCloud*
+*Built on AWS EC2 · Jenkins · Docker · Kubernetes K3s · ArgoCD · Prometheus · Grafana · SonarCloud*
