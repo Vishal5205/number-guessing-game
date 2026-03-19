@@ -105,7 +105,7 @@ Two dedicated EC2 instances — both `c7i.flex.large`, `us-east-1b`, **3/3 statu
 | **CI-JENKINS-SERVER** | i-0adbbf5fae0771b4e | Jenkins CI | 54.163.20.147 |
 | **CD-KUBERNETES-SERVER** | i-0ce5af51b511204d2 | K3s + ArgoCD + Monitoring | 18.206.245.80 |
 
-![AWS EC2 — Both Instances Running](screenshots/Screenshot_2026-03-18_at_11_34_26_PM.png)
+![AWS EC2 — Both Instances Running](screenshots/Screenshot_2026-03-18_at_11.34.26_PM.png)
 
 ---
 
@@ -132,10 +132,14 @@ sudo systemctl restart jenkins
 | `github-creds` | Checkout source from GitHub |
 | `sonar-token` | SonarCloud code quality analysis |
 
+![Jenkins — Global Credentials](screenshots/Screenshot_2026-03-18_at_10.02.31_PM.png)
+
 ### Plugins Installed
 
 - **Docker Pipeline** `634.vedc7242b_eda_7`
 - **SonarQube Scanner** `2.18.2`
+
+![Jenkins — Plugins](screenshots/Screenshot_2026-03-18_at_9.58.35_PM.png)
 
 ### Pipeline Stages — Build #3 ✅ (44 sec total)
 
@@ -147,9 +151,9 @@ Start → Checkout SCM (0.25s) → SonarCloud Analysis (33s) → Docker Build (1
 - Branch: `refs/remotes/origin/main`
 - Triggered by: **Devops**
 
-![Jenkins — All 4 Stages Passed ✅](screenshots/Screenshot_2026-03-18_at_10_19_38_PM.png)
+![Jenkins — All 4 Stages Passed ✅](screenshots/Screenshot_2026-03-18_at_10.19.38_PM.png)
 
-![Jenkins — Finished: SUCCESS](screenshots/Screenshot_2026-03-18_at_10_23_28_PM.png)
+![Jenkins — Finished: SUCCESS](screenshots/Screenshot_2026-03-18_at_10.23.28_PM.png)
 
 ### DockerHub — Image Published
 
@@ -162,7 +166,7 @@ Start → Checkout SCM (0.25s) → SonarCloud Analysis (33s) → Docker Build (1
 | `7` | ~2 hours ago |
 | `10` | ~8 hours ago |
 
-![DockerHub — guessing-game repository with 4 tags](screenshots/Screenshot_2026-03-18_at_10_20_13_PM.png)
+![DockerHub — guessing-game repository with 4 tags](screenshots/Screenshot_2026-03-18_at_10.20.13_PM.png)
 
 ---
 
@@ -211,7 +215,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 **Resource Tree:** `guessing-game (app)` → `svc + deployment` → `ReplicaSets` → `Pod (1/1 Running)`
 
-![ArgoCD — App Healthy & Synced to main](screenshots/Screenshot_2026-03-18_at_10_46_15_PM.png)
+![ArgoCD — App Healthy & Synced to main](screenshots/Screenshot_2026-03-18_at_10.46.15_PM.png)
 
 ---
 
@@ -248,17 +252,13 @@ kubectl get secret --namespace monitoring monitoring-grafana \
 
 ### Prometheus — All Targets Healthy
 
-All **13 scraped targets** returning `up = 1` ✅ including:
-- `kubelet` (cadvisor + probes + metrics)
-- `kube-state-metrics`
-- `node-exporter` (port 9100)
-- `grafana`, `prometheus`, `alertmanager`, `coredns`
+All **13 scraped targets** returning `up = 1` ✅
 
-![Prometheus — up query, all 13 targets = 1](screenshots/Screenshot_2026-03-18_at_11_25_56_PM.png)
+![Prometheus — up query, all 13 targets = 1](screenshots/Screenshot_2026-03-18_at_11.25.56_PM.png)
 
-![Prometheus — kube_pod_info, 21 pod result series](screenshots/Screenshot_2026-03-18_at_11_26_38_PM.png)
+![Prometheus — kube_pod_info, 21 pod result series](screenshots/Screenshot_2026-03-18_at_11.26.38_PM.png)
 
-![Prometheus — container_cpu_usage_seconds_total graph (30m)](screenshots/Screenshot_2026-03-18_at_11_31_27_PM.png)
+![Prometheus — container_cpu_usage_seconds_total graph](screenshots/Screenshot_2026-03-18_at_11.31.27_PM.png)
 
 ### Grafana — CPU Usage Dashboard
 
@@ -266,10 +266,9 @@ All **13 scraped targets** returning `up = 1` ✅ including:
 - **Namespace:** `default`
 - **Pod:** `guessing-game-84f4d8c486-l8vsv`
 - **Metric:** `node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m`
-- **Data Source:** `prometheus-1`
 - **Grafana Version:** v12.4.1
 
-![Grafana — CPU Usage for guessing-game pod](screenshots/Screenshot_2026-03-18_at_11_17_02_PM.png)
+![Grafana — CPU Usage for guessing-game pod](screenshots/Screenshot_2026-03-18_at_11.17.02_PM.png)
 
 ---
 
@@ -323,9 +322,7 @@ Security Group: `sg-0196aa0e7398713e5` (`launch-wizard-7`) — **6 inbound rules
 | **`32443`** | Custom TCP | 🔍 **Prometheus** |
 | **`32729`** | Custom TCP | 🔄 **ArgoCD UI** |
 
-![AWS Security Group — 6 Inbound Rules (Final State)](screenshots/Screenshot_2026-03-18_at_11_09_55_PM.png)
-
-> Ports were opened incrementally as each service was deployed — evolving from 2 rules (SSH + app) to the full 6-rule stack.
+![AWS Security Group — 6 Inbound Rules](screenshots/Screenshot_2026-03-18_at_11.09.55_PM.png)
 
 ---
 
@@ -337,7 +334,7 @@ Security Group: `sg-0196aa0e7398713e5` (`launch-wizard-7`) — **6 inbound rules
 - **Gameplay:** Guess the secret coordinate between 001–100 in 5 reactor core attempts
 - **Status:** `TRANSMISSION LIVE` ✅
 
-![Deep Space App — Live on NodePort 30007](screenshots/Screenshot_2026-03-18_at_11_10_03_PM.png)
+![Deep Space App — Live on NodePort 30007](screenshots/Screenshot_2026-03-18_at_11.10.03_PM.png)
 
 ---
 
@@ -348,23 +345,11 @@ number-guessing-game/
 ├── index.html           # Game frontend (Deep Space UI)
 ├── Dockerfile           # Container definition
 ├── Jenkinsfile          # CI pipeline (Checkout → Sonar → Build → Push)
-├── deployment.yaml      # Kubernetes Deployment manifest
-├── service.yaml         # Kubernetes Service (NodePort 30007)
-└── screenshots/         # ← Commit all .png screenshots here
-    ├── Screenshot_2026-03-18_at_11_34_26_PM.png   # EC2 instances
-    ├── Screenshot_2026-03-18_at_10_19_38_PM.png   # Jenkins stages
-    ├── Screenshot_2026-03-18_at_10_23_28_PM.png   # Jenkins SUCCESS
-    ├── Screenshot_2026-03-18_at_10_20_13_PM.png   # DockerHub
-    ├── Screenshot_2026-03-18_at_10_46_15_PM.png   # ArgoCD synced
-    ├── Screenshot_2026-03-18_at_11_25_56_PM.png   # Prometheus up
-    ├── Screenshot_2026-03-18_at_11_26_38_PM.png   # kube_pod_info
-    ├── Screenshot_2026-03-18_at_11_31_27_PM.png   # CPU graph
-    ├── Screenshot_2026-03-18_at_11_17_02_PM.png   # Grafana dashboard
-    ├── Screenshot_2026-03-18_at_11_09_55_PM.png   # Security group
-    └── Screenshot_2026-03-18_at_11_10_03_PM.png   # App running
+├── k8s/
+│   ├── deployment.yaml  # Kubernetes Deployment manifest
+│   └── service.yaml     # Kubernetes Service (NodePort 30007)
+└── screenshots/         # All project screenshots
 ```
-
-> **To activate all screenshots:** create a `screenshots/` folder in your repo root and commit the `.png` files listed above with the **exact same filenames**.
 
 ---
 
@@ -382,7 +367,6 @@ sudo systemctl restart jenkins
 ```
 - Install plugins: **Docker Pipeline**, **SonarQube Scanner**
 - Add credentials: `dockerhub-creds`, `github-creds`, `sonar-token`
-- Create pipeline job pointing to this GitHub repo
 
 ### 3. Set Up K3s (CD Server)
 ```bash
@@ -416,7 +400,7 @@ kubectl patch svc monitoring-kube-prometheus-prometheus -n monitoring \
 ### 6. Connect ArgoCD to Repo
 - Open `http://18.206.245.80:32729`
 - Create app → repo: `https://github.com/Vishal5205/number-guessing-game`
-- Enable **Auto-Sync** → ArgoCD keeps cluster in sync with `main`
+- Enable **Auto-Sync**
 
 ---
 
