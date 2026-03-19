@@ -11,7 +11,7 @@
 
 ---
 
-## 📋 Table of Contents
+##  Table of Contents
 
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
@@ -28,7 +28,7 @@
 
 ---
 
-## 🎯 Project Overview
+##  Project Overview
 
 This project demonstrates a **production-grade DevOps pipeline** for a containerized web application called **Deep Space — Coordinate Lock Protocol**, a space-themed number guessing game (v2.4.1).
 
